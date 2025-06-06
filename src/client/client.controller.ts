@@ -1,18 +1,22 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Param, Post, Body } from '@nestjs/common';
 import { ClientService } from './client.service';
-// import { Client } from '@prisma/client'; // Removed because '@prisma/client' has no exported member 'Client'
 
-@Controller('clients')
+@Controller('public/client')
 export class ClientController {
-  constructor(private readonly clientService: ClientService) {}
+  constructor(private readonly clientService: ClientService) { }
+
+  @Get(':slug')
+  getClientBySlug(@Param('slug') slug: string) {
+    return this.clientService.findBySlug(slug);
+  }
 
   @Post()
-  async create(@Body() data: { name: string; email: string; phone?: string }): Promise<any> {
-    return this.clientService.createClient(data);
+  createClient(@Body() body: any) {
+    return this.clientService.createClient(body);
   }
 
   @Get()
-  async findAll(): Promise<any[]> {
+  getAllClients() {
     return this.clientService.getAllClients();
   }
 }
