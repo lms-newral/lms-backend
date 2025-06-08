@@ -7,21 +7,37 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Client {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  slug         String   @unique
+  subdomain    String   @unique
+  logoUrl      String?
+  appName      String?
+  primaryColor String?
+  createdAt    DateTime @default(now())
+  users        User[]
+}
+
 model User {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  profileImage  String?
-  email         String   @unique
-  emailVerified Boolean  @default(false)
-  password      String
-  name          String
-  role          Role     @default(STUDENT)
-  deviceLimit   Int      @default(2)
-  devices       Device[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  profileImage String?
+  email        String   @unique
+  phoneNumber  String?  @unique
+  isVerified   Boolean  @default(false)
+  password     String
+  name         String
+  role         Role     @default(STUDENT)
+  deviceLimit  Int      @default(2)
+  devices      Device[]
+  client       Client   @relation(fields: [clientId], references: [id])
+  clientId     String   @db.ObjectId
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([role])
-  @@index([emailVerified])
+  @@index([clientId])
+  @@index([isVerified])
   @@index([name])
 }
 
@@ -29,11 +45,12 @@ model Device {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
   user         User     @relation(fields: [userId], references: [id])
   userId       String   @db.ObjectId
-  deviceId     String
+  osName       String
+  browserName  String
+  deviceIp     String
   refreshToken String
   createdAt    DateTime @default(now())
 
-  @@unique([userId, deviceId])
   @@index([userId])
 }
 

@@ -1,27 +1,31 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Body, Controller, Post, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './dto/register.dto';
-import { VerifyOtpDto } from './dto/otp.dto';
-import { LoginDto } from './dto/login.dto';
+import { loginDto, signupDto } from './dto/auth.dto';
+import { Tokens } from './types';
+import { Request } from 'express';
+
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private authService: AuthService) {}
 
-  @Post('signup/request-otp')
-  async requestSignupOtp(@Body() registerDto: RegisterDto) {
-    return this.authService.requestSignupOtp(registerDto);
+  @Post('/request-otp')
+  requestOtp(@Req() req: Request): Promise<string> {
+    return this.authService.requestOtp(req);
   }
-
-  @Post('signup/verify-otp')
-  async verifySignupOtp(
-    @Body() verifyOtpDto: VerifyOtpDto,
-    @Body() registerDto: RegisterDto,
-  ) {
-    return this.authService.verifySignupOtp(verifyOtpDto, registerDto);
+  @Post('/signup')
+  signup(@Body() dto: signupDto, @Req() req: Request): Promise<Tokens | null> {
+    return this.authService.signup(dto, req);
   }
-
-  @Post('login')
-  async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  @Post('/login')
+  login(@Body() dto: loginDto, @Req() req: Request): Promise<any> {
+    return this.authService.login(dto, req);
+  }
+  @Post('/logout')
+  logout() {
+    this.authService.logout();
+  }
+  @Post('/refresh')
+  refershTokens() {
+    this.authService.refreshTokens();
   }
 }
