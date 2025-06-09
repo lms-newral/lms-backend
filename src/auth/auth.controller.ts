@@ -22,9 +22,13 @@ export class AuthController {
   checkEmail(@Body() dto: checkUserDto): Promise<boolean> {
     return this.authService.checkEmail(dto);
   }
-  @Post('/signup')
+  @Post('/signup-student')
   signup(@Body() dto: signupDto): Promise<Tokens | null> {
     return this.authService.signup(dto);
+  }
+  @Post('/signup-teacher')
+  signupTeacher(@Body() dto: signupDto): Promise<Tokens | null> {
+    return this.authService.signupTeacher(dto);
   }
   @Post('/login')
   login(@Body() dto: loginDto, @Req() req: Request): Promise<any> {

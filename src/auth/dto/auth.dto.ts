@@ -19,7 +19,6 @@ export class signupDto {
   @IsString()
   code: string;
 
-  @IsEmail()
   email: string;
 
   @IsString()

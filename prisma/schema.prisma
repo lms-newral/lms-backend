@@ -22,7 +22,7 @@ model Client {
 model User {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
   profileImage String?
-  email        String   @unique
+  email        String
   phoneNumber  String?  @unique
   isVerified   Boolean  @default(false)
   password     String
@@ -38,6 +38,7 @@ model User {
   otpId        String?  @db.ObjectId
 
   @@index([role])
+  @@index([email])
   @@index([clientId])
   @@index([isVerified])
   @@index([name])

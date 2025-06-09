@@ -100,10 +100,8 @@ export class AuthService {
       return null;
     }
   }
-
-  // Signup
-  async signup(dto: signupDto): Promise<Tokens | null> {
-    console.log(dto.code);
+  //Signup Teacher
+  async signupTeacher(dto: signupDto): Promise<Tokens | null> {
     const userExists = await this.checkUser(dto.email, dto.clientId);
     if (userExists != null) {
       return null;
@@ -121,6 +119,8 @@ export class AuthService {
           password: hashedPassword,
           phoneNumber: dto.phoneNumber,
           profileImage: dto.profileImage,
+          deviceLimit: 5,
+          role: 'TEACHER',
           isVerified: true,
           clientId: dto.clientId,
         },
@@ -141,6 +141,45 @@ export class AuthService {
     }
   }
 
+  // Signup
+  async signup(dto: signupDto): Promise<Tokens | null> {
+    const userExists = await this.checkUser(dto.email, dto.clientId);
+    if (userExists != null) {
+      throw new Error('email already exists');
+    }
+    try {
+      const verify = await this.otpService.verifyOtp(dto.email, dto.code);
+      if (!verify) {
+        throw new Error('OTP does not match');
+      }
+      const hashedPassword = await hash(dto.password, 10);
+      const newUser = await this.prismaService.user.create({
+        data: {
+          email: dto.email,
+          name: dto.name,
+          password: hashedPassword,
+          phoneNumber: dto.phoneNumber,
+          profileImage: dto.profileImage,
+
+          isVerified: true,
+          clientId: dto.clientId,
+        },
+      });
+      const access_token = await this.signAccessToken(
+        newUser.id,
+        newUser.email,
+      ); // returns access_token
+      const refresh_token = await this.signRefreshToken(
+        newUser.id,
+        newUser.email,
+      ); // returns refresh_token
+
+      return { access_token, refresh_token };
+    } catch (e) {
+      console.log(e);
+      return null;
+    }
+  }
   async login(dto: loginDto, req: Request): Promise<any> {
     try {
       const checkClient = await this.prismaService.client.findUnique({

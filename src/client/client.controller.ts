@@ -1,5 +1,6 @@
 import { Controller, Get, Param, Post, Body } from '@nestjs/common';
 import { ClientService } from './client.service';
+import { clientDto } from './dto/client.dto';
 
 @Controller('public/client')
 export class ClientController {
@@ -11,8 +12,8 @@ export class ClientController {
   }
 
   @Post()
-  createClient(@Body() body: any) {
-    return this.clientService.createClient(body);
+  createClient(@Body() data: clientDto) {
+    return this.clientService.createClient(data);
   }
 
   @Get()

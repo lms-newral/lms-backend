@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Client } from '@prisma/client';
+import { clientDto } from './dto/client.dto';
 
 @Injectable()
 export class ClientService {
@@ -12,14 +13,7 @@ export class ClientService {
     });
   }
 
-  async createClient(data: {
-    name: string;
-    slug: string;
-    subdomain: string;
-    logoUrl?: string;
-    appName?: string;
-    primaryColor?: string;
-  }): Promise<Client> {
+  async createClient(data: clientDto): Promise<Client> {
     // Basic checks
     if (!data.name || typeof data.name !== 'string' || !data.name.trim()) {
       throw new Error(
