@@ -119,6 +119,9 @@ export class AuthService {
           email: dto.email,
           name: dto.name,
           password: hashedPassword,
+          phoneNumber: dto.phoneNumber,
+          profileImage: dto.profileImage,
+          isVerified: true,
           clientId: dto.clientId,
         },
       });
