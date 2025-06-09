@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, Min } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
 export class loginDto {
   @IsNotEmpty()
@@ -31,7 +31,6 @@ export class signupDto {
 
   @IsString()
   @IsNotEmpty()
-  @Min(5)
   password: string;
 
   @IsString()
@@ -53,4 +52,18 @@ enum Role {
 class Device {
   deviceId: string;
   refreshToken: string;
+}
+
+export class checkUserDto {
+  email: string;
+  clientId: string;
+}
+export class requestOtpDto {
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+}
+export class logoutDto {
+  userId: string;
+  deviceId: string;
 }

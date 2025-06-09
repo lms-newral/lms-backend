@@ -1,6 +1,12 @@
 import { Body, Controller, Post, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { loginDto, signupDto } from './dto/auth.dto';
+import {
+  checkUserDto,
+  loginDto,
+  logoutDto,
+  requestOtpDto,
+  signupDto,
+} from './dto/auth.dto';
 import { Tokens } from './types';
 import { Request } from 'express';
 
@@ -9,8 +15,12 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('/request-otp')
-  requestOtp(@Req() req: Request): Promise<string> {
-    return this.authService.requestOtp(req);
+  requestOtp(@Body() dto: requestOtpDto): Promise<string> {
+    return this.authService.requestOtp(dto);
+  }
+  @Post('/check-email')
+  checkEmail(@Body() dto: checkUserDto): Promise<boolean> {
+    return this.authService.checkEmail(dto);
   }
   @Post('/signup')
   signup(@Body() dto: signupDto, @Req() req: Request): Promise<Tokens | null> {
@@ -21,11 +31,11 @@ export class AuthController {
     return this.authService.login(dto, req);
   }
   @Post('/logout')
-  logout() {
-    this.authService.logout();
+  logout(@Body() dto: logoutDto): Promise<string> {
+    return this.authService.logout(dto);
   }
   @Post('/refresh')
-  refershTokens() {
-    this.authService.refreshTokens();
+  refershTokens(@Body() refreshToken: string): Promise<Tokens | null> {
+    return this.authService.refreshTokens(refreshToken);
   }
 }

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class MailerService {
@@ -20,7 +21,8 @@ export class MailerService {
   async sendMail(options: {
     to: string;
     subject: string;
-    text: string;
+    text?: string;
+    html?: string;
   }): Promise<nodemailer.SentMessageInfo> {
     return await this.transporter.sendMail({
       from: process.env.SMTP_FROM as string,
@@ -31,34 +33,67 @@ export class MailerService {
 
 @Injectable()
 export class OtpService {
-  private otpStore = new Map<string, string>();
+  private readonly EXPIRY_MINUTES = 10;
 
-  constructor(private readonly mailerService: MailerService) {}
+  constructor(
+    private readonly mailerService: MailerService,
+    private readonly prismaService: PrismaService,
+  ) {}
 
-  async generateOtp(email: string): Promise<string> {
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    this.saveOtp(email, code);
-    const text = `<p> Your verification code is <b>${code}</b>`;
-    if (process.env.ENV === 'PROD') {
+  async generateAndSendOtp(email: string, userId?: string): Promise<string> {
+    const code = Math.floor(100000 + Math.random() * 900000).toString(); //generate a 6 digit code
+    const expiresAt = new Date(Date.now() + this.EXPIRY_MINUTES * 60000);
+
+    const otp = await this.prismaService.otp.create({
+      data: {
+        userId,
+        expiresAt,
+        email,
+        otp: code,
+      },
+    });
+    if (!otp) throw new Error('failed to create otp');
+    const htmlContent = `<p>Your verification code is <b>${code}</b></p>`;
+
+    if (process.env.NODE_ENV === 'production') {
       await this.mailerService.sendMail({
         to: email,
-        subject: 'OTP code',
-        text: text,
+        subject: 'OTP Verification Code',
+        html: htmlContent,
       });
     }
-    console.log(`Your otp is ${code}`);
+
+    console.log(`Your OTP is ${code}`);
     return code;
   }
-  sendOtp() {}
-  saveOtp(email: string, otp: string) {
-    this.otpStore.set(email, otp);
-  }
 
-  verifyOtp(email: string, otp: string): boolean {
-    return this.otpStore.get(email) === otp;
-  }
+  async verifyOtp(email: string, otpCode: string) {
+    const otpRecord = await this.prismaService.otp.findFirst({
+      where: {
+        email,
+        otp: otpCode,
+        used: false,
+      },
+    });
 
-  deleteOtp(email: string) {
-    this.otpStore.delete(email);
+    if (!otpRecord) {
+      throw new Error('Invalid OTP');
+    }
+
+    if (otpRecord.expiresAt < new Date()) {
+      throw new Error('OTP expired');
+    }
+
+    // Update the OTP record to mark it as used
+    await this.prismaService.otp.update({
+      where: {
+        id: otpRecord.id,
+      },
+      data: {
+        used: true,
+      },
+    });
+
+    return otpRecord;
   }
 }

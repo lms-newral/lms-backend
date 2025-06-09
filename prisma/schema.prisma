@@ -34,6 +34,8 @@ model User {
   clientId     String   @db.ObjectId
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  Otp          Otp?
+  otpId        String?  @db.ObjectId
 
   @@index([role])
   @@index([clientId])
@@ -48,10 +50,22 @@ model Device {
   osName       String
   browserName  String
   deviceIp     String
-  refreshToken String
+  refreshToken String?
   createdAt    DateTime @default(now())
 
   @@index([userId])
+}
+
+model Otp {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    String?  @unique @db.ObjectId
+  email     String
+  otp       String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum Role {
