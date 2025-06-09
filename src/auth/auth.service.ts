@@ -64,7 +64,7 @@ export class AuthService {
       },
       {
         secret: process.env.AT_SECRET,
-        expiresIn: '15m', // Better to use string format
+        expiresIn: '15m',
       },
     );
     return accessToken;
@@ -79,7 +79,7 @@ export class AuthService {
       },
       {
         secret: process.env.RT_SECRET,
-        expiresIn: '7d', // Refresh tokens should have longer expiry
+        expiresIn: '7d',
       },
     );
     return refreshToken;
@@ -102,15 +102,12 @@ export class AuthService {
   }
 
   // Signup
-  async signup(dto: signupDto, req: Request): Promise<Tokens | null> {
+  async signup(dto: signupDto): Promise<Tokens | null> {
     console.log(dto.code);
     const userExists = await this.checkUser(dto.email, dto.clientId);
     if (userExists != null) {
       return null;
     }
-    const ip = req.ip;
-    console.log(ip);
-
     try {
       const verify = await this.otpService.verifyOtp(dto.email, dto.code);
       if (!verify) {
@@ -191,7 +188,7 @@ export class AuthService {
       });
 
       const refreshToken = await this.signRefreshToken(user.id, user.email);
-
+      const accesstoken = await this.signAccessToken(user.id, user.email);
       if (device) {
         // Update existing device
         device = await this.prismaService.device.update({
@@ -237,12 +234,13 @@ export class AuthService {
         email: user.email,
         role: user.role,
         isVerified: user.isVerified,
+        accesstoken,
         refreshToken: device?.refreshToken || refreshToken, // Remove "|| refreshToken" when frontend gets ready
         profileImage: user.profileImage as string,
       };
     } catch (e) {
       console.log(e);
-      throw e; // Re-throw the error instead of returning undefined
+      throw new Error(e);
     }
   }
 

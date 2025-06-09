@@ -23,8 +23,8 @@ export class AuthController {
     return this.authService.checkEmail(dto);
   }
   @Post('/signup')
-  signup(@Body() dto: signupDto, @Req() req: Request): Promise<Tokens | null> {
-    return this.authService.signup(dto, req);
+  signup(@Body() dto: signupDto): Promise<Tokens | null> {
+    return this.authService.signup(dto);
   }
   @Post('/login')
   login(@Body() dto: loginDto, @Req() req: Request): Promise<any> {
