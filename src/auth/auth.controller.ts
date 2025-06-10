@@ -4,6 +4,7 @@ import {
   checkUserDto,
   loginDto,
   logoutDto,
+  refreshTokenDto,
   requestOtpDto,
   signupDto,
 } from './dto/auth.dto';
@@ -39,7 +40,7 @@ export class AuthController {
     return this.authService.logout(dto);
   }
   @Post('/refresh')
-  refershTokens(@Body() refreshToken: string): Promise<Tokens | null> {
-    return this.authService.refreshTokens(refreshToken);
+  refershTokens(@Body() dto: refreshTokenDto): Promise<Tokens | null> {
+    return this.authService.refreshTokens(dto);
   }
 }

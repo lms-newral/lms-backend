@@ -4,6 +4,7 @@ import {
   checkUserDto,
   loginDto,
   logoutDto,
+  refreshTokenDto,
   requestOtpDto,
   signupDto,
 } from './dto/auth.dto';
@@ -312,7 +313,7 @@ export class AuthService {
     }
   }
 
-  async refreshTokens(refreshToken: string): Promise<Tokens | null> {
+  async refreshTokens(dto: refreshTokenDto): Promise<Tokens | null> {
     try {
       // Verify the refresh token
       interface JwtPayload {
@@ -322,7 +323,7 @@ export class AuthService {
       }
 
       const payload = await this.jwtService.verifyAsync<JwtPayload>(
-        refreshToken,
+        dto.refreshToken,
         {
           secret: process.env.RT_SECRET,
         },
@@ -345,7 +346,7 @@ export class AuthService {
       // Find the device with this refresh token
       const device = await this.prismaService.device.findFirst({
         where: {
-          refreshToken: refreshToken,
+          refreshToken: dto.refreshToken,
           userId: userId,
         },
       });
@@ -379,7 +380,7 @@ export class AuthService {
       try {
         await this.prismaService.device.deleteMany({
           where: {
-            refreshToken: refreshToken,
+            refreshToken: dto.refreshToken,
           },
         });
       } catch (cleanupError) {
@@ -389,33 +390,6 @@ export class AuthService {
       throw new Error('Token refresh failed');
     }
   }
-
-  // Helper method to get user's devices
-  async getUserDevices(userId: string): Promise<Device[]> {
-    try {
-      return await this.prismaService.device.findMany({
-        where: {
-          userId: userId,
-          refreshToken: {
-            not: undefined,
-          },
-        },
-        select: {
-          id: true,
-          userId: true,
-          osName: true,
-          browserName: true,
-          deviceIp: true,
-          refreshToken: true,
-          createdAt: true,
-        },
-      });
-    } catch (error) {
-      console.log(error);
-      throw new Error('Failed to fetch user devices');
-    }
-  }
-
   // Helper method to logout from specific device - deletes device entirely
   async logoutFromDevice(userId: string, deviceId: string): Promise<string> {
     try {

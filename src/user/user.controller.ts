@@ -24,13 +24,17 @@ export class UserController {
   ) {
     return this.userService.updateUser(userId, updateData);
   }
-  @Get('/getStudents/:clientId')
-  getAllStudents(@Param('clientId') clientId: string) {
-    return this.userService.getAllStudentsForClient(clientId);
+  @Get('/getStudents/:clientSlug')
+  getAllStudents(@Param('clientSlug') clientSlug: string) {
+    return this.userService.getAllStudentsForClient(clientSlug);
   }
 
-  @Get('/getTeachers/:clientId')
-  getAllTeachers(@Param('clientId') clientId: string) {
-    return this.userService.getAllTeachersForClient(clientId);
+  @Get('/getTeachers/:clientSlug')
+  getAllTeachers(@Param('clientSlug') clientSlug: string) {
+    return this.userService.getAllTeachersForClient(clientSlug);
+  }
+  @Get('/devices/:userId')
+  getUserDevices(@Param('userId') userId: string) {
+    return this.userService.getUserDevices(userId);
   }
 }

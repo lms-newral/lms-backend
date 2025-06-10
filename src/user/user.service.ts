@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { compare, hash } from 'bcrypt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { checkPasswordDto, UpdateUserDto } from './dto/user.dto';
+import { Device } from '@prisma/client';
 
 @Injectable()
 export class UserService {
@@ -76,10 +77,16 @@ export class UserService {
       throw new Error(err);
     }
   }
-  async getAllStudentsForClient(clientId: string) {
+  async getAllStudentsForClient(clientSlug: string) {
+    const client = await this.prismaService.client.findUnique({
+      where: {
+        slug: clientSlug,
+      },
+    });
+    if (!client) return 'client not found';
     const users = await this.prismaService.user.findMany({
       where: {
-        clientId,
+        clientId: client.id,
         role: 'STUDENT',
       },
     });
@@ -87,14 +94,44 @@ export class UserService {
     return users;
   }
 
-  async getAllTeachersForClient(clientId: string) {
+  async getAllTeachersForClient(clientSlug: string) {
+    const client = await this.prismaService.client.findUnique({
+      where: {
+        slug: clientSlug,
+      },
+    });
+    if (!client) return 'client not found';
     const users = await this.prismaService.user.findMany({
       where: {
-        clientId,
+        clientId: client.id,
         role: 'TEACHER',
       },
     });
     if (!users) throw new Error('No users for this client');
     return users;
+  }
+  async getUserDevices(userId: string): Promise<Device[]> {
+    try {
+      return await this.prismaService.device.findMany({
+        where: {
+          userId: userId,
+          refreshToken: {
+            not: undefined,
+          },
+        },
+        select: {
+          id: true,
+          userId: true,
+          osName: true,
+          browserName: true,
+          deviceIp: true,
+          refreshToken: true,
+          createdAt: true,
+        },
+      });
+    } catch (error) {
+      console.log(error);
+      throw new Error('Failed to fetch user devices');
+    }
   }
 }

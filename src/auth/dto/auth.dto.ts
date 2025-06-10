@@ -20,9 +20,7 @@ export class signupDto {
   code: string;
 
   email: string;
-
-  @IsString()
-  phoneNumber: string;
+  phoneNumber?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -32,14 +30,14 @@ export class signupDto {
   @IsNotEmpty()
   password: string;
 
-  @IsString()
-  profileImage: string;
+  profileImage?: string;
 
   @IsString()
   clientId: string;
 
-  isVerified: boolean;
-  role: Role;
+  isVerified?: boolean;
+
+  role?: Role;
   deviceLimit: number;
   devices: Device[];
 }
@@ -63,6 +61,9 @@ export class requestOtpDto {
   email: string;
 }
 export class logoutDto {
-  userId: string;
-  deviceId: string;
+  userId?: string;
+  deviceId?: string;
+}
+export class refreshTokenDto {
+  refreshToken: string;
 }

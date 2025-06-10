@@ -17,6 +17,7 @@ model Client {
   primaryColor String?
   createdAt    DateTime @default(now())
   users        User[]
+  Video        Video[]
 }
 
 model User {
@@ -36,6 +37,7 @@ model User {
   updatedAt    DateTime @updatedAt
   Otp          Otp?
   otpId        String?  @db.ObjectId
+  Video        Video[]
 
   @@index([role])
   @@index([email])
@@ -73,4 +75,37 @@ enum Role {
   STUDENT
   TEACHER
   ADMIN
+}
+
+model Video {
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  description  String?
+  videoUrl     String
+  thumbnailUrl String?
+  duration     Int? // in seconds
+  size         Int? // in bytes
+  status       VideoStatus @default(PROCESSING)
+
+  teacher   User   @relation(fields: [teacherId], references: [id])
+  teacherId String @db.ObjectId
+  client    Client @relation(fields: [clientId], references: [id])
+  clientId  String @db.ObjectId
+
+  categories String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clientId])
+  @@index([teacherId])
+  @@index([status])
+  @@index([categories])
+}
+
+enum VideoStatus {
+  PROCESSING
+  READY
+  FAILED
+  DELETED
 }
