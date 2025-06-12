@@ -5,6 +5,14 @@ export class UpdateUserDto {
   password?: string;
   profileImage?: string;
 }
+export class ChangeRole {
+  role: Role;
+}
+enum Role {
+  STUDENT = 'STUDENT',
+  TEACHER = 'TEACHER',
+  ADMIN = 'ADMIN',
+}
 export class checkPasswordDto {
   @IsNotEmpty()
   @IsString()

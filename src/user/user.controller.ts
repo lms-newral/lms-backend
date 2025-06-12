@@ -1,15 +1,26 @@
-import { Controller, Param, Get, Body, Post, Put } from '@nestjs/common';
+import { Controller, Param, Get, Body, Post, Put, Query } from '@nestjs/common';
 import { UserService } from './user.service';
 import { checkPasswordDto, UpdateUserDto } from './dto/user.dto';
+import { Role, User } from '@prisma/client';
 
 @Controller('user')
 export class UserController {
   constructor(private userService: UserService) {}
 
+  @Get('/devices/:userId')
+  getUserDevices(@Param('userId') userId: string) {
+    return this.userService.getUserDevices(userId);
+  }
+  @Get('/filter')
+  getFilteredUser(@Query('role') role: Role) {
+    return this.userService.getFilteredUser(role);
+  }
+
   @Get('/:userId')
-  getUser(@Param('userId') userId: string) {
+  getUser(@Param('userId') userId: string): Promise<Omit<User, 'password'>> {
     return this.userService.getUser(userId);
   }
+
   @Post('/checkPassword/:userId')
   checkPassword(
     @Param('userId') userId: string,
@@ -17,24 +28,12 @@ export class UserController {
   ) {
     return this.userService.checkPassword(userId, dto);
   }
+
   @Put('/updateUser/:userId')
   updateUser(
     @Param('userId') userId: string,
     @Body() updateData: UpdateUserDto,
   ) {
     return this.userService.updateUser(userId, updateData);
-  }
-  @Get('/getStudents/:clientSlug')
-  getAllStudents(@Param('clientSlug') clientSlug: string) {
-    return this.userService.getAllStudentsForClient(clientSlug);
-  }
-
-  @Get('/getTeachers/:clientSlug')
-  getAllTeachers(@Param('clientSlug') clientSlug: string) {
-    return this.userService.getAllTeachersForClient(clientSlug);
-  }
-  @Get('/devices/:userId')
-  getUserDevices(@Param('userId') userId: string) {
-    return this.userService.getUserDevices(userId);
   }
 }

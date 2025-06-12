@@ -1,14 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { compare, hash } from 'bcrypt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { checkPasswordDto, UpdateUserDto } from './dto/user.dto';
-import { Device } from '@prisma/client';
+import { Device, Role, User } from '@prisma/client';
 
 @Injectable()
 export class UserService {
   constructor(private prismaService: PrismaService) {}
 
-  async getUser(userId: string) {
+  async getUser(userId: string): Promise<Omit<User, 'password'>> {
     try {
       const user = await this.prismaService.user.findFirst({
         where: {
@@ -77,34 +77,20 @@ export class UserService {
       throw new Error(err);
     }
   }
-  async getAllStudentsForClient(clientSlug: string) {
-    const client = await this.prismaService.client.findUnique({
+  async getFilteredUser(role: Role) {
+    const user = await this.prismaService.user.findMany({
       where: {
-        slug: clientSlug,
+        role: role,
       },
     });
-    if (!client) return 'client not found';
-    const users = await this.prismaService.user.findMany({
-      where: {
-        clientId: client.id,
-        role: 'STUDENT',
-      },
-    });
-    if (!users) throw new Error('No users for this client');
-    return users;
+    if (user.length == 0) throw new NotFoundException(`no ${role} found`);
+    return user;
   }
 
-  async getAllTeachersForClient(clientSlug: string) {
-    const client = await this.prismaService.client.findUnique({
-      where: {
-        slug: clientSlug,
-      },
-    });
-    if (!client) return 'client not found';
+  async getAllAdmins() {
     const users = await this.prismaService.user.findMany({
       where: {
-        clientId: client.id,
-        role: 'TEACHER',
+        role: 'ADMIN',
       },
     });
     if (!users) throw new Error('No users for this client');

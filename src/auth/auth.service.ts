@@ -50,7 +50,6 @@ export class AuthService {
     const user = await this.prismaService.user.findUnique({
       where: {
         email: dto.email,
-        clientId: dto.clientId,
       },
     });
     return !!user;
@@ -87,12 +86,11 @@ export class AuthService {
   }
 
   // Check if the user already exists
-  async checkUser(email: string, clientId: string) {
+  async checkUser(email: string) {
     try {
       const user = await this.prismaService.user.findFirst({
         where: {
           email,
-          clientId,
         },
       });
       return user;
@@ -103,7 +101,7 @@ export class AuthService {
   }
   //Signup Teacher
   async signupTeacher(dto: signupDto): Promise<Tokens | null> {
-    const userExists = await this.checkUser(dto.email, dto.clientId);
+    const userExists = await this.checkUser(dto.email);
     if (userExists != null) {
       return null;
     }
@@ -117,13 +115,13 @@ export class AuthService {
         data: {
           email: dto.email,
           name: dto.name,
+          username: dto.username, // Add this line to provide the required username property
           password: hashedPassword,
           phoneNumber: dto.phoneNumber,
           profileImage: dto.profileImage,
           deviceLimit: 5,
           role: 'TEACHER',
           isVerified: true,
-          clientId: dto.clientId,
         },
       });
       const access_token = await this.signAccessToken(
@@ -144,7 +142,7 @@ export class AuthService {
 
   // Signup
   async signup(dto: signupDto): Promise<Tokens | null> {
-    const userExists = await this.checkUser(dto.email, dto.clientId);
+    const userExists = await this.checkUser(dto.email);
     if (userExists != null) {
       throw new Error('email already exists');
     }
@@ -157,13 +155,13 @@ export class AuthService {
       const newUser = await this.prismaService.user.create({
         data: {
           email: dto.email,
+          username: dto.username,
           name: dto.name,
           password: hashedPassword,
           phoneNumber: dto.phoneNumber,
           profileImage: dto.profileImage,
 
           isVerified: true,
-          clientId: dto.clientId,
         },
       });
       const access_token = await this.signAccessToken(
@@ -182,111 +180,100 @@ export class AuthService {
     }
   }
   async login(dto: loginDto, req: Request): Promise<any> {
-    try {
-      const checkClient = await this.prismaService.client.findUnique({
-        where: {
-          id: dto.clientId,
-        },
-      });
-      if (!checkClient) {
-        throw new Error('Client does not exist');
-      }
-      const user = await this.checkUser(dto.email, dto.clientId);
-      if (!user) {
-        throw new Error('Email does not exist');
-      }
-      const comparePassword = await compare(dto.password, user.password);
-      if (!comparePassword) {
-        throw new Error('Password is incorrect');
-      }
-      if (!req.headers['user-agent']) return;
-
-      const ip = req.ip;
-      const userAgent = req.headers['user-agent'];
-      const parser = new UAParser(userAgent);
-
-      const deviceInfo: IResult = parser.getResult();
-
-      console.log(deviceInfo);
-      let device: Device | null;
-      device = await this.prismaService.device.findFirst({
-        where: {
-          osName: deviceInfo.os.name,
-          browserName: deviceInfo.browser.name,
-          deviceIp: ip,
-          userId: user.id,
-        },
-      });
-
-      const activeDevices = await this.prismaService.device.findMany({
-        where: {
-          userId: user.id,
-          refreshToken: {
-            not: undefined,
-          },
-        },
-        orderBy: {
-          createdAt: 'asc',
-        },
-      });
-
-      const refreshToken = await this.signRefreshToken(user.id, user.email);
-      const accesstoken = await this.signAccessToken(user.id, user.email);
-      if (device) {
-        // Update existing device
-        device = await this.prismaService.device.update({
-          where: {
-            id: device.id,
-          },
-          data: {
-            refreshToken,
-          },
-        });
-      } else {
-        // Check if we need to remove oldest device when limit is exceeded
-        if (activeDevices.length >= user.deviceLimit) {
-          // Remove the oldest active device
-          const oldestDevice = activeDevices[0];
-          await this.prismaService.device.delete({
-            where: {
-              id: oldestDevice.id,
-            },
-          });
-          console.log(
-            `Removed oldest device ${oldestDevice.id} for user ${user.id} due to device limit`,
-          );
-        }
-
-        // Create new device
-        device = await this.prismaService.device.create({
-          data: {
-            osName: deviceInfo.os.name || '',
-            browserName: deviceInfo.browser.name || '',
-            deviceIp: ip || '',
-            userId: user.id,
-            refreshToken,
-          },
-        });
-      }
-
-      return {
-        id: user.id,
-        name: user.name,
-        clientId: user.clientId,
-        phoneNumber: user.phoneNumber as string,
-        email: user.email,
-        role: user.role,
-        isVerified: user.isVerified,
-        accesstoken,
-        refreshToken: device?.refreshToken || refreshToken, // Remove "|| refreshToken" when frontend gets ready
-        profileImage: user.profileImage as string,
-      };
-    } catch (e) {
-      console.log(e);
-      throw new Error(e);
+    const user = await this.checkUser(dto.email);
+    if (!user) {
+      throw new Error('Email does not exist');
     }
-  }
+    const comparePassword = await compare(dto.password, user.password);
+    if (!comparePassword) {
+      throw new Error('Password is incorrect');
+    }
+    if (!req.headers['user-agent']) return;
 
+    const ip = req.ip;
+    const userAgent = req.headers['user-agent'];
+    const parser = new UAParser(userAgent);
+
+    const deviceInfo: IResult = parser.getResult();
+
+    console.log(deviceInfo);
+    let device: Device | null;
+    device = await this.prismaService.device.findFirst({
+      where: {
+        osName: deviceInfo.os.name,
+        browserName: deviceInfo.browser.name,
+        deviceIp: ip,
+        userId: user.id,
+      },
+    });
+
+    const activeDevices = await this.prismaService.device.findMany({
+      where: {
+        userId: user.id,
+        refreshToken: {
+          not: undefined,
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    const refreshToken = await this.signRefreshToken(user.id, user.email);
+    const accesstoken = await this.signAccessToken(user.id, user.email);
+    if (device) {
+      // Update existing device
+      device = await this.prismaService.device.update({
+        where: {
+          id: device.id,
+        },
+        data: {
+          refreshToken,
+        },
+      });
+    } else {
+      // Check if we need to remove oldest device when limit is exceeded
+      if (activeDevices.length >= user.deviceLimit) {
+        // Remove the oldest active device
+        const oldestDevice = activeDevices[0];
+        await this.prismaService.device.delete({
+          where: {
+            id: oldestDevice.id,
+          },
+        });
+        console.log(
+          `Removed oldest device ${oldestDevice.id} for user ${user.id} due to device limit`,
+        );
+      }
+
+      // Create new device
+      device = await this.prismaService.device.create({
+        data: {
+          osName: deviceInfo.os.name || '',
+          browserName: deviceInfo.browser.name || '',
+          deviceIp: ip || '',
+          userId: user.id,
+          refreshToken,
+        },
+      });
+    }
+
+    return {
+      id: user.id,
+      name: user.name,
+      phoneNumber: user.phoneNumber as string,
+      email: user.email,
+      role: user.role,
+      isVerified: user.isVerified,
+      accesstoken,
+      refreshToken: device?.refreshToken || refreshToken, // Remove "|| refreshToken" when frontend gets ready
+      profileImage: user.profileImage as string,
+    };
+  }
+  catch(e) {
+    console.log(e);
+    throw new Error(e);
+  }
   async logout(dto: logoutDto): Promise<string> {
     try {
       if (dto.deviceId) {

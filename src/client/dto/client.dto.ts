@@ -7,12 +7,22 @@ export class clientDto {
 
   @IsString()
   @IsNotEmpty()
-  slug: string;
-
-  @IsString()
-  @IsNotEmpty()
   subdomain: string;
+
   logoUrl?: string;
   appName?: string;
   primaryColor?: string;
+}
+
+export class updateClientStatus {
+  @IsString()
+  @IsNotEmpty()
+  clientId: string;
+
+  service: Service;
+}
+
+enum Service {
+  ACTIVE = 'ACTIVE',
+  SUSPENDED = 'SUSPENDED',
 }

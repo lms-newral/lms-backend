@@ -2,10 +2,6 @@ import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
 export class loginDto {
   @IsNotEmpty()
-  @IsString()
-  clientId: string;
-
-  @IsNotEmpty()
   @IsEmail()
   email: string;
 
@@ -21,7 +17,7 @@ export class signupDto {
 
   email: string;
   phoneNumber?: string;
-
+  username: string;
   @IsString()
   @IsNotEmpty()
   name: string;
@@ -31,10 +27,6 @@ export class signupDto {
   password: string;
 
   profileImage?: string;
-
-  @IsString()
-  clientId: string;
-
   isVerified?: boolean;
 
   role?: Role;
@@ -45,6 +37,7 @@ enum Role {
   STUDENT = 'STUDENT',
   TEACHER = 'TEACHER',
   ADMIN = 'ADMIN',
+  SUPER_ADMIN = 'SUPER_ADMIN',
 }
 class Device {
   deviceId: string;
@@ -53,7 +46,6 @@ class Device {
 
 export class checkUserDto {
   email: string;
-  clientId: string;
 }
 export class requestOtpDto {
   @IsNotEmpty()
