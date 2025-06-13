@@ -7,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Configuration model for this client instance
 model ClientConfig {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
   name         String
@@ -25,7 +24,6 @@ enum Service {
   SUSPENDED
 }
 
-// User Model (Simplified for single client)
 model User {
   id           String  @id @default(auto()) @map("_id") @db.ObjectId
   profileImage String?
@@ -38,15 +36,13 @@ model User {
   role         Role    @default(STUDENT)
   deviceLimit  Int     @default(2)
 
-  // Relations
   devices Device[]
   otp     Otp?
   otpId   String?  @db.ObjectId
 
-  // Course Relations
-  createdCourses  Course[]           @relation("CourseCreator") // Courses created by teacher
+  createdCourses  Course[]           @relation("CourseCreator")
   enrolledCourses CourseEnrollment[] // Courses student is enrolled in
-  createdClasses  Class[]            @relation("ClassCreator") // Classes created by teacher
+  createdClasses  Class[]            @relation("ClassCreator")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -56,7 +52,6 @@ model User {
   @@index([name])
 }
 
-// Device Model (Unchanged)
 model Device {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -70,7 +65,6 @@ model Device {
   @@index([userId])
 }
 
-// OTP Model (Unchanged)
 model Otp {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -83,26 +77,25 @@ model Otp {
   updatedAt DateTime @updatedAt
 }
 
-// Course Model (Removed client relation)
 model Course {
   id          String  @id @default(auto()) @map("_id") @db.ObjectId
   title       String
   description String
-  thumbnail   String? // Course thumbnail image
+  thumbnail   String?
   isActive    Boolean @default(true)
-  price       Float? // Optional pricing
-  category    String? // Course category
+  price       Float?
+  category    String?
 
-  // Teacher who created the course
   creator   User   @relation("CourseCreator", fields: [creatorId], references: [id])
   creatorId String @db.ObjectId
 
-  // Relations
   enrollments CourseEnrollment[]
   classes     Class[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  Note       Note[]
+  Assignment Assignment[]
 
   @@index([creatorId])
   @@index([isActive])
@@ -110,7 +103,6 @@ model Course {
   @@index([category])
 }
 
-// Course Enrollment (Unchanged logic, simplified relations)
 model CourseEnrollment {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
@@ -123,10 +115,10 @@ model CourseEnrollment {
   courseId String @db.ObjectId
 
   enrolledAt     DateTime         @default(now())
-  completedAt    DateTime? // When the course was completed
+  completedAt    DateTime?
   status         EnrollmentStatus @default(ACTIVE)
   progress       Float            @default(0) // Progress percentage (0-100)
-  lastAccessedAt DateTime? // Track when student last accessed the course
+  lastAccessedAt DateTime?
 
   @@unique([studentId, courseId]) // A student can only be enrolled once in a course
   @@index([studentId])
@@ -136,17 +128,16 @@ model CourseEnrollment {
 }
 
 model Class {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
   title       String
   description String?
   videoLink   String?
   zoomLink    String?
-  notes       String[]
-  attachments String[] //pdf and other attachment links 
-  assignments String[]
-  quizzes     String[]
+  attachments String // pdf and other attachment links
 
-  // Course this class belongs to
+  notes       Note[]
+  assignments Assignment[]
+
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
   courseId String @db.ObjectId
 
@@ -154,11 +145,9 @@ model Class {
   creator   User   @relation("ClassCreator", fields: [creatorId], references: [id])
   creatorId String @db.ObjectId
 
-  // Scheduling and tracking
-  scheduledAt     DateTime? // When the class is scheduled (for live sessions)
-  attendanceCount Int       @default(0) // Track attendance for live sessions
+  scheduledAt     DateTime?
+  attendanceCount Int       @default(0)
 
-  // Content flags
   isLive     Boolean @default(false)
   isRecorded Boolean @default(false)
   isActive   Boolean @default(false)
@@ -167,6 +156,33 @@ model Class {
   updatedAt DateTime @updatedAt
 
   @@index([scheduledAt])
+}
+
+model Note {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  notesHtml String
+
+  class   Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  classId String @db.ObjectId
+
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId  String   @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Assignment {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  assignments String
+
+  class   Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  classId String @db.ObjectId
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId String @db.ObjectId
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum EnrollmentStatus {

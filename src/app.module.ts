@@ -15,6 +15,8 @@ import { ClientStatusGuard } from './common/guards/clientStatus.guard';
 import { CourseEnrollmentService } from './course-enrollment/course-enrollment.service';
 import { CourseEnrollmentController } from './course-enrollment/course-enrollment.controller';
 import { CourseEnrollmentModule } from './course-enrollment/course-enrollment.module';
+import { NotesModule } from './notes/notes.module';
+import { AssignmentModule } from './assignment/assignment.module';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { CourseEnrollmentModule } from './course-enrollment/course-enrollment.mo
     CourseModule,
     ClassModule,
     CourseEnrollmentModule,
+    NotesModule,
+    AssignmentModule,
   ],
   controllers: [ClientController, UserController, CourseEnrollmentController],
   providers: [
