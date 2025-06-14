@@ -1,7 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Assignment, Role } from '@prisma/client';
@@ -88,94 +87,98 @@ export class AssignmentService {
     return assignment;
   }
   async getassignmentsInClass(classId: string) {
-    try {
-      const assignments = await this.prisma.assignment.findMany({
-        where: {
-          classId,
-        },
-      });
-      if (!assignments || assignments[0]) {
-        throw new NotFoundException('assignments not found');
-      }
-      return assignments;
-    } catch (error) {
-      throw new ServiceUnavailableException(error);
+    const assignments = await this.prisma.assignment.findMany({
+      where: {
+        classId,
+      },
+      select: {
+        id: true,
+        assignments: true,
+        createdAt: true,
+      },
+    });
+    if (!assignments || assignments.length === 0) {
+      throw new NotFoundException('assignments not found');
     }
+    return assignments;
   }
   async getassignmentsInCourse(courseId: string) {
-    try {
-      const assignments = await this.prisma.assignment.findMany({
-        where: {
-          courseId,
+    const course = await this.prisma.course.findUnique({
+      where: {
+        id: courseId,
+      },
+      select: {
+        classes: {
+          select: {
+            title: true,
+            assignments: {
+              select: {
+                id: true,
+                assignments: true,
+                createdAt: true,
+              },
+            },
+          },
         },
-      });
-      if (!assignments || assignments[0]) {
-        throw new NotFoundException('assignments not found');
-      }
-      return assignments;
-    } catch (error) {
-      throw new ServiceUnavailableException(error);
+      },
+    });
+    if (!course) {
+      throw new NotFoundException('Course not found');
     }
+
+    return course.classes;
   }
   async updateassignment(
     userId: string,
     assignmentId: string,
     dto: { assignment: string },
   ) {
-    try {
-      const getClassId = await this.prisma.assignment.findUnique({
-        where: {
-          id: assignmentId,
-        },
-        select: { classId: true },
-      });
-      if (!getClassId || !getClassId.classId) {
-        throw new NotFoundException('Class not found');
-      }
-      const valid = await this.checkClassAndCreator(getClassId.classId, userId);
-      if (!valid.success) {
-        throw new UnauthorizedException(
-          'You are not authorized to update this assignment',
-        );
-      }
-      const updateassignment = await this.prisma.assignment.update({
-        where: {
-          id: assignmentId,
-        },
-        data: {
-          assignments: dto.assignment,
-        },
-      });
-      return updateassignment;
-    } catch (e) {
-      throw new ServiceUnavailableException(e);
+    const getClassId = await this.prisma.assignment.findUnique({
+      where: {
+        id: assignmentId,
+      },
+      select: { classId: true },
+    });
+    if (!getClassId || !getClassId.classId) {
+      throw new NotFoundException('Class not found');
     }
+    const valid = await this.checkClassAndCreator(getClassId.classId, userId);
+    if (!valid.success) {
+      throw new UnauthorizedException(
+        'You are not authorized to update this assignment',
+      );
+    }
+    const updateassignment = await this.prisma.assignment.update({
+      where: {
+        id: assignmentId,
+      },
+      data: {
+        assignments: dto.assignment,
+      },
+    });
+    return updateassignment;
   }
   async deletassignment(userId: string, assignmentId: string) {
-    try {
-      const getClassId = await this.prisma.assignment.findUnique({
-        where: {
-          id: assignmentId,
-        },
-        select: { classId: true },
-      });
-      if (!getClassId || !getClassId.classId) {
-        throw new NotFoundException('Class not found');
-      }
-      const valid = await this.checkClassAndCreator(getClassId.classId, userId);
-      if (!valid.success) {
-        throw new UnauthorizedException(
-          'You are not authorized to delete this assignment',
-        );
-      }
-      await this.prisma.assignment.delete({
-        where: {
-          id: assignmentId,
-        },
-      });
-      return { data: 'assignment deleted' };
-    } catch (e) {
-      throw new ServiceUnavailableException(e);
+    const getClassId = await this.prisma.assignment.findUnique({
+      where: {
+        id: assignmentId,
+      },
+      select: { classId: true },
+    });
+    if (!getClassId || !getClassId.classId) {
+      throw new NotFoundException('Class not found');
     }
+    const valid = await this.checkClassAndCreator(getClassId.classId, userId);
+    if (!valid.success) {
+      throw new UnauthorizedException(
+        'You are not authorized to delete this assignment',
+      );
+    }
+    await this.prisma.assignment.delete({
+      where: {
+        id: assignmentId,
+      },
+    });
+    return { data: 'assignment deleted' };
   }
 }

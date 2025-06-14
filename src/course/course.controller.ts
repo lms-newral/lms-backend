@@ -28,7 +28,15 @@ export class CourseController {
   createCourse(@Body() dto: CreateCoureDto, @Request() req: RequestWithUser) {
     return this.couseService.createCourse(dto, req.user.id);
   }
-
+  @Put('/transfer/:courseId')
+  @UseGuards(JwtAuthGuard)
+  @Roles(Role.ADMIN || Role.SUPER_ADMIN)
+  transferOwnership(
+    @Param('courseId') courseId: string,
+    @Body() dto: { teacherId: string },
+  ) {
+    return this.couseService.transferOwnership(courseId, dto);
+  }
   @Put(':courseId')
   @UseGuards(JwtAuthGuard)
   @Roles(Role.TEACHER || Role.ADMIN || Role.SUPER_ADMIN)

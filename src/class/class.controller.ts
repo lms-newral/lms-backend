@@ -13,6 +13,8 @@ import { createClassDto, updateClassDto } from './dto/class.dto';
 import { JwtAuthGuard } from 'src/common/guards';
 import { ClassService } from './class.service';
 import { RequestWithUser } from 'src/common/guards/auth.guard';
+import { Role } from '@prisma/client';
+import { Roles } from 'src/common/decorators';
 
 @Controller('class')
 export class ClassController {
@@ -40,8 +42,10 @@ export class ClassController {
   ) {
     return this.classService.createClass(dto, req.user.id, courseId);
   }
+
   @Delete('/delete/:classId')
   @UseGuards(JwtAuthGuard)
+  @Roles(Role.ADMIN || Role.TEACHER || Role.SUPER_ADMIN)
   deleteClass(
     @Param('classId') classId: string,
     @Request() req: RequestWithUser,

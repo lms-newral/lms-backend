@@ -1,12 +1,12 @@
 import {
+  ForbiddenException,
   Injectable,
-  InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { CreateCoureDto, UpdateCourseDto } from './dto/course.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Course } from '@prisma/client';
+import { Course, Role } from '@prisma/client';
 
 @Injectable()
 export class CourseService {
@@ -42,40 +42,69 @@ export class CourseService {
     dto: UpdateCourseDto,
     userId: string, // This will come from the guard
   ) {
-    try {
-      // Find the course
-      const course = await this.prisma.course.findUnique({
-        where: {
-          id: courseId,
-        },
-      });
-      if (!course) {
-        throw new NotFoundException('Course not found');
-      }
-
-      // Check if user is the creator of the course
-      if (userId !== course.creatorId) {
-        throw new UnauthorizedException(
-          'You can only update courses you created',
-        );
-      }
-
-      const updatedCourse = await this.prisma.course.update({
-        where: {
-          id: courseId,
-        },
-        data: dto,
-      });
-
-      return updatedCourse;
-    } catch (error) {
-      if (
-        error instanceof UnauthorizedException ||
-        error instanceof NotFoundException
-      ) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Failed to update course');
+    // Find the course
+    const course = await this.prisma.course.findUnique({
+      where: {
+        id: courseId,
+      },
+    });
+    if (!course) {
+      throw new NotFoundException('Course not found');
     }
+
+    // Check if user is the creator of the course
+    if (userId !== course.creatorId) {
+      throw new UnauthorizedException(
+        'You can only update courses you created',
+      );
+    }
+
+    const updatedCourse = await this.prisma.course.update({
+      where: {
+        id: courseId,
+      },
+      data: dto,
+    });
+
+    return updatedCourse;
+  }
+  async transferOwnership(courseId: string, dto: { teacherId: string }) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: dto.teacherId,
+      },
+      select: {
+        role: true,
+      },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (user.role !== Role.TEACHER) {
+      throw new ForbiddenException('User is not a teacher');
+    }
+    const course = await this.prisma.course.findUnique({
+      where: {
+        id: courseId,
+      },
+      select: {
+        creatorId: true,
+      },
+    });
+    if (!course) {
+      throw new NotFoundException('course not found');
+    }
+    if (course.creatorId === dto.teacherId) {
+      throw new ForbiddenException('Cant perform this action');
+    }
+    const updatedCourse = await this.prisma.course.update({
+      where: {
+        id: courseId,
+      },
+      data: {
+        creatorId: dto.teacherId,
+      },
+    });
+    return updatedCourse;
   }
 }

@@ -13,12 +13,15 @@ import { NotesService } from './notes.service';
 import { createNotesDto } from './dto/notes.dto';
 import { JwtAuthGuard } from 'src/common/guards';
 import { RequestWithUser } from 'src/common/guards/auth.guard';
+import { Roles } from 'src/common/decorators';
+import { Role } from '@prisma/client';
 
 @Controller('notes')
 export class NotesController {
   constructor(private notesServices: NotesService) {}
 
-  @Post('/:classId')
+  @Post('/create/:classId')
+  @Roles(Role.TEACHER || Role.ADMIN || Role.SUPER_ADMIN)
   @UseGuards(JwtAuthGuard)
   createNote(
     @Param('classId') classId: string,
@@ -28,27 +31,29 @@ export class NotesController {
     return this.notesServices.createNotes(classId, req.user.id, dto);
   }
 
-  @Get('/:courseId/course')
+  @Get('/course/:courseId')
   getNoteInCourse(@Param('courseId') courseId: string) {
     return this.notesServices.getNotesInCourse(courseId);
   }
 
-  @Get('/:classId/class')
+  @Get('/class/:classId')
   getNoteInClass(@Param('classId') classId: string) {
     return this.notesServices.getNotesInClass(classId);
   }
 
-  @Put('/:notesId')
+  @Put('/update/:notesId')
+  @Roles(Role.TEACHER || Role.ADMIN || Role.SUPER_ADMIN)
   @UseGuards(JwtAuthGuard)
   updateNote(
     @Param('notesId') notesId: string,
-    @Body() dto: { noteHtml: string },
+    @Body() dto: { notesHtml: string },
     @Request() req: RequestWithUser,
   ) {
     return this.notesServices.updateNote(req.user.id, notesId, dto);
   }
 
-  @Delete('/:notesId')
+  @Delete('/delete/:notesId')
+  @Roles(Role.TEACHER || Role.ADMIN || Role.SUPER_ADMIN)
   @UseGuards(JwtAuthGuard)
   deleteNote(
     @Param('notesId') notesId: string,

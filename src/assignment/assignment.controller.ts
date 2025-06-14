@@ -12,12 +12,15 @@ import {
 import { AssignmentService } from './assignment.service';
 import { JwtAuthGuard } from 'src/common/guards';
 import { RequestWithUser } from 'src/common/guards/auth.guard';
+import { Role } from '@prisma/client';
+import { Roles } from 'src/common/decorators';
 
 @Controller('assignment')
 export class AssignmentController {
   constructor(private assignmentService: AssignmentService) {}
 
-  @Post('/:classId')
+  @Post('/create/:classId')
+  @Roles(Role.TEACHER || Role.ADMIN || Role.SUPER_ADMIN)
   @UseGuards(JwtAuthGuard)
   createAssignment(
     @Param('classId') classId: string,
@@ -27,17 +30,18 @@ export class AssignmentController {
     return this.assignmentService.createAssignments(classId, req.user.id, dto);
   }
 
-  @Get('/:courseId/course')
+  @Get('/course/:courseId')
   getAssignmentInCourse(@Param('courseId') courseId: string) {
     return this.assignmentService.getassignmentsInCourse(courseId);
   }
 
-  @Get('/:classId/class')
+  @Get('/class/:classId')
   getAssignmentInClass(@Param('classId') classId: string) {
     return this.assignmentService.getassignmentsInClass(classId);
   }
 
-  @Put('/:assignmentId')
+  @Put('/update/:assignmentId')
+  @Roles(Role.TEACHER || Role.ADMIN || Role.SUPER_ADMIN)
   @UseGuards(JwtAuthGuard)
   updateAssignment(
     @Param('assignmentId') assignmentId: string,
@@ -51,7 +55,8 @@ export class AssignmentController {
     );
   }
 
-  @Delete('/:assignmentId')
+  @Delete('/delete/:assignmentId')
+  @Roles(Role.TEACHER || Role.ADMIN || Role.SUPER_ADMIN)
   @UseGuards(JwtAuthGuard)
   deleteAssignment(
     @Param('assignmentId') assignmentId: string,
