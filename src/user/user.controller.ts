@@ -1,7 +1,18 @@
-import { Controller, Param, Get, Body, Post, Put, Query } from '@nestjs/common';
+import {
+  Controller,
+  Param,
+  Get,
+  Body,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import { checkPasswordDto, UpdateUserDto } from './dto/user.dto';
 import { Role, User } from '@prisma/client';
+import { Roles } from 'src/common/decorators';
+import { JwtAuthGuard } from 'src/common/guards';
 
 @Controller('user')
 export class UserController {
@@ -35,5 +46,11 @@ export class UserController {
     @Body() updateData: UpdateUserDto,
   ) {
     return this.userService.updateUser(userId, updateData);
+  }
+  //@UseGuards(JwtAuthGuard)
+  @Roles(Role.ADMIN || Role.SUPER_ADMIN)
+  @Put('/role/:userId')
+  changeUserRole(@Param('userId') userId: string, @Body() dto: { role: Role }) {
+    return this.userService.changeUserRole(userId, dto.role);
   }
 }

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { compare, hash } from 'bcrypt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { checkPasswordDto, UpdateUserDto } from './dto/user.dto';
@@ -119,5 +123,31 @@ export class UserService {
       console.log(error);
       throw new Error('Failed to fetch user devices');
     }
+  }
+  async changeUserRole(userId: string, role: Role) {
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        role: true,
+      },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (user.role === Role.SUPER_ADMIN) {
+      throw new ForbiddenException('cant change the role of the super admin');
+    }
+
+    const updatedUser = await this.prismaService.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        role: role,
+      },
+    });
+    return updatedUser;
   }
 }
