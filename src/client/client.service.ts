@@ -1,62 +1,72 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Client } from '@prisma/client';
+import { ClientConfig } from '@prisma/client';
+import { clientDto, updateClientStatus } from './dto/client.dto';
 
 @Injectable()
 export class ClientService {
-    constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
-    async findBySlug(slug: string): Promise<Client | null> {
-        return this.prisma.client.findUnique({
-            where: { slug },
-        });
+  async findById(clientConfigId: string): Promise<ClientConfig | null> {
+    return await this.prisma.clientConfig.findUnique({
+      where: { id: clientConfigId },
+    });
+  }
+
+  async createClient(data: clientDto): Promise<ClientConfig> {
+    // Basic checks
+    if (!data.name || typeof data.name !== 'string' || !data.name.trim()) {
+      throw new Error(
+        'Client name is required and must be a non-empty string.',
+      );
+    }
+    if (
+      !data.subdomain ||
+      typeof data.subdomain !== 'string' ||
+      !/^[a-z0-9-]+$/.test(data.subdomain)
+    ) {
+      throw new Error(
+        'Subdomain is required and must be a lowercase alphanumeric string (dashes allowed).',
+      );
+    }
+    if (data.logoUrl && typeof data.logoUrl !== 'string') {
+      throw new Error('logoUrl must be a string if provided.');
+    }
+    if (data.appName && typeof data.appName !== 'string') {
+      throw new Error('appName must be a string if provided.');
+    }
+    if (data.primaryColor && typeof data.primaryColor !== 'string') {
+      throw new Error('primaryColor must be a string if provided.');
     }
 
-    async createClient(data: {
-        name: string;
-        slug: string;
-        subdomain: string;
-        logoUrl?: string;
-        appName?: string;
-        primaryColor?: string;
-    }): Promise<Client> {
-        // Basic checks
-        if (!data.name || typeof data.name !== 'string' || !data.name.trim()) {
-            throw new Error('Client name is required and must be a non-empty string.');
-        }
-        if (!data.slug || typeof data.slug !== 'string' || !/^[a-z0-9-]+$/.test(data.slug)) {
-            throw new Error('Slug is required and must be a lowercase alphanumeric string (dashes allowed).');
-        }
-        if (!data.subdomain || typeof data.subdomain !== 'string' || !/^[a-z0-9-]+$/.test(data.subdomain)) {
-            throw new Error('Subdomain is required and must be a lowercase alphanumeric string (dashes allowed).');
-        }
-        if (data.logoUrl && typeof data.logoUrl !== 'string') {
-            throw new Error('logoUrl must be a string if provided.');
-        }
-        if (data.appName && typeof data.appName !== 'string') {
-            throw new Error('appName must be a string if provided.');
-        }
-        if (data.primaryColor && typeof data.primaryColor !== 'string') {
-            throw new Error('primaryColor must be a string if provided.');
-        }
-
-        // Optionally, check for uniqueness of slug or subdomain
-        const existing = await this.prisma.client.findFirst({
-            where: {
-                OR: [
-                    { slug: data.slug },
-                    { subdomain: data.subdomain }
-                ]
-            }
-        });
-        if (existing) {
-            throw new Error('A client with the same slug or subdomain already exists.');
-        }
-
-        return this.prisma.client.create({ data });
+    // Optionally, check for uniqueness of subdomain
+    const existing = await this.prisma.clientConfig.findFirst({
+      where: {
+        subdomain: data.subdomain,
+      },
+    });
+    if (existing) {
+      throw new Error(
+        'A client with the same slug or subdomain already exists.',
+      );
     }
 
-    async getAllClients(): Promise<Client[]> {
-        return this.prisma.client.findMany();
-    }
+    return this.prisma.clientConfig.create({ data });
+  }
+
+  async getAllClients(): Promise<ClientConfig[]> {
+    return this.prisma.clientConfig.findMany();
+  }
+
+  async UpdateClientStatus(dto: updateClientStatus): Promise<ClientConfig> {
+    const updateClient = await this.prisma.clientConfig.update({
+      where: {
+        id: dto.clientId,
+      },
+      data: {
+        service: dto.service,
+      },
+    });
+    return updateClient;
+  }
 }

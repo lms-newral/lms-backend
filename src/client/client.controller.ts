@@ -1,22 +1,35 @@
-import { Controller, Get, Param, Post, Body } from '@nestjs/common';
+import { Controller, Get, Param, Post, Body, Put } from '@nestjs/common';
 import { ClientService } from './client.service';
+import { clientDto, updateClientStatus } from './dto/client.dto';
+import { ClientConfig, Role } from '@prisma/client';
+import { Roles } from 'src/common/decorators';
+import { SkipClientCheck } from 'src/common/guards/clientStatus.guard';
 
-@Controller('public/client')
+@Controller('public/clientConfig')
 export class ClientController {
-  constructor(private readonly clientService: ClientService) { }
+  constructor(private readonly clientService: ClientService) {}
 
-  @Get(':slug')
-  getClientBySlug(@Param('slug') slug: string) {
-    return this.clientService.findBySlug(slug);
+  @Get('/:clientConfigId')
+  getClientById(
+    @Param('clientConfigId') clientConfigId: string,
+  ): Promise<ClientConfig | null> {
+    return this.clientService.findById(clientConfigId);
   }
 
   @Post()
-  createClient(@Body() body: any) {
-    return this.clientService.createClient(body);
+  @SkipClientCheck()
+  createClient(@Body() data: clientDto) {
+    return this.clientService.createClient(data);
   }
 
   @Get()
-  getAllClients() {
+  getAllClients(): Promise<ClientConfig[]> {
     return this.clientService.getAllClients();
+  }
+  @Put('/update')
+  @SkipClientCheck()
+  // @Roles(Role.SUPER_ADMIN)
+  updatClientStatus(@Body() dto: updateClientStatus): Promise<ClientConfig> {
+    return this.clientService.UpdateClientStatus(dto);
   }
 }

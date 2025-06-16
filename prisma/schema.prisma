@@ -7,13 +7,192 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Client {
+model ClientConfig {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
   name         String
-  slug         String   @unique
-  subdomain    String   @unique
   logoUrl      String?
   appName      String?
   primaryColor String?
+  service      Service  @default(SUSPENDED)
+  subdomain    String?
   createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum Service {
+  ACTIVE
+  SUSPENDED
+}
+
+model User {
+  id           String  @id @default(auto()) @map("_id") @db.ObjectId
+  profileImage String?
+  email        String  @unique
+  phoneNumber  String? @unique
+  isVerified   Boolean @default(false)
+  password     String
+  username     String  @unique
+  name         String
+  role         Role    @default(STUDENT)
+  deviceLimit  Int     @default(2)
+
+  devices Device[]
+  otp     Otp?
+  otpId   String?  @db.ObjectId
+
+  createdCourses  Course[]           @relation("CourseCreator")
+  enrolledCourses CourseEnrollment[] // Courses student is enrolled in
+  createdClasses  Class[]            @relation("ClassCreator")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role])
+  @@index([isVerified])
+  @@index([name])
+}
+
+model Device {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String   @db.ObjectId
+  osName       String
+  browserName  String
+  deviceIp     String
+  refreshToken String?
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Otp {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String?  @unique @db.ObjectId
+  email     String
+  otp       String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Course {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  thumbnail   String?
+  isActive    Boolean @default(true)
+  price       Float?
+  category    String?
+
+  creator   User   @relation("CourseCreator", fields: [creatorId], references: [id])
+  creatorId String @db.ObjectId
+
+  enrollments CourseEnrollment[]
+  classes     Class[]
+
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  Note       Note[]
+  Assignment Assignment[]
+
+  @@index([creatorId])
+  @@index([isActive])
+  @@index([title])
+  @@index([category])
+}
+
+model CourseEnrollment {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Student enrolled in course
+  student   User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId String @db.ObjectId
+
+  // Course the student is enrolled in
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId String @db.ObjectId
+
+  enrolledAt     DateTime         @default(now())
+  completedAt    DateTime?
+  status         EnrollmentStatus @default(ACTIVE)
+  progress       Float            @default(0) // Progress percentage (0-100)
+  lastAccessedAt DateTime?
+
+  @@unique([studentId, courseId]) // A student can only be enrolled once in a course
+  @@index([studentId])
+  @@index([courseId])
+  @@index([status])
+  @@index([enrolledAt])
+}
+
+model Class {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String?
+  videoLink   String?
+  zoomLink    String?
+  attachments String // pdf and other attachment links
+
+  notes       Note[]
+  assignments Assignment[]
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId String @db.ObjectId
+
+  // Teacher who created this class
+  creator   User   @relation("ClassCreator", fields: [creatorId], references: [id])
+  creatorId String @db.ObjectId
+
+  scheduledAt     DateTime?
+  attendanceCount Int       @default(0)
+
+  isLive     Boolean @default(false)
+  isRecorded Boolean @default(false)
+  isActive   Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([scheduledAt])
+}
+
+model Note {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  notesHtml String
+
+  class   Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  classId String @db.ObjectId
+
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId  String   @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Assignment {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  assignments String
+
+  class   Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  classId String @db.ObjectId
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId String @db.ObjectId
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+  SUPER_ADMIN
 }

@@ -4,8 +4,8 @@ import { ClientController } from './client.controller';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Module({
-    controllers: [ClientController],
-    providers: [ClientService, PrismaService],
-    exports: [ClientService],
+  controllers: [ClientController],
+  providers: [ClientService, PrismaService],
+  exports: [ClientService],
 })
-export class ClientModule { }
+export class ClientModule {}
