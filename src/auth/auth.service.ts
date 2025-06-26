@@ -46,6 +46,7 @@ export class AuthService {
     }
   }
 
+  // Check if the user already exists
   async checkEmail(dto: checkUserDto): Promise<boolean> {
     const user = await this.prismaService.user.findUnique({
       where: {
@@ -54,7 +55,14 @@ export class AuthService {
     });
     return !!user;
   }
-
+  async checkUsername(dto: { username: string }): Promise<boolean> {
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        username: dto.username,
+      },
+    });
+    return !!user;
+  }
   // Sign access_token
   async signAccessToken(userId: string, email: string): Promise<string> {
     const accessToken = await this.jwtService.signAsync(
@@ -85,7 +93,6 @@ export class AuthService {
     return refreshToken;
   }
 
-  // Check if the user already exists
   async checkUser(email: string) {
     try {
       const user = await this.prismaService.user.findFirst({
@@ -99,8 +106,9 @@ export class AuthService {
       return null;
     }
   }
+
   //Signup Teacher
-  async signupTeacher(dto: signupDto): Promise<Tokens | null> {
+  async signupTeacher(dto: signupDto): Promise<any> {
     const userExists = await this.checkUser(dto.email);
     if (userExists != null) {
       return null;
@@ -133,7 +141,7 @@ export class AuthService {
         newUser.email,
       ); // returns refresh_token
 
-      return { access_token, refresh_token };
+      return { accesToken: access_token, refreshToken: refresh_token };
     } catch (e) {
       console.log(e);
       return null;
@@ -141,12 +149,18 @@ export class AuthService {
   }
 
   // Signup
-  async signup(dto: signupDto): Promise<Tokens | null> {
+  async signup(dto: signupDto, req: Request): Promise<any> {
     const userExists = await this.checkUser(dto.email);
     if (userExists != null) {
       throw new Error('email already exists');
     }
     try {
+      if (!req.headers['user-agent']) return null;
+
+      const ip = req.ip;
+      const userAgent = req.headers['user-agent'];
+      const parser = new UAParser(userAgent);
+
       const verify = await this.otpService.verifyOtp(dto.email, dto.code);
       if (!verify) {
         throw new Error('OTP does not match');
@@ -157,7 +171,7 @@ export class AuthService {
           email: dto.email,
           username: dto.username,
           name: dto.name,
-          password: hashedPassword,
+          password: hashedPassword as string,
           phoneNumber: dto.phoneNumber,
           profileImage: dto.profileImage,
 
@@ -173,7 +187,31 @@ export class AuthService {
         newUser.email,
       ); // returns refresh_token
 
-      return { access_token, refresh_token };
+      const deviceInfo: IResult = parser.getResult();
+      // Create new device
+      const device = await this.prismaService.device.create({
+        data: {
+          osName: deviceInfo.os.name || '',
+          browserName: deviceInfo.browser.name || '',
+          deviceIp: ip || '',
+          userId: newUser.id,
+          refreshToken: refresh_token,
+        },
+      });
+      return {
+        user: {
+          id: newUser.id,
+          name: newUser.name,
+          phoneNumber: newUser.phoneNumber as string,
+          email: newUser.email,
+          role: newUser.role,
+          isVerified: newUser.isVerified,
+          profileImage: newUser.profileImage as string,
+          deviceId: device.id,
+        },
+        accesstoken: access_token,
+        refreshToken: device?.refreshToken || refresh_token, // Remove "|| refreshToken" when frontend gets ready
+      };
     } catch (e) {
       console.log(e);
       return null;
@@ -259,15 +297,19 @@ export class AuthService {
     }
 
     return {
-      id: user.id,
-      name: user.name,
-      phoneNumber: user.phoneNumber as string,
-      email: user.email,
-      role: user.role,
-      isVerified: user.isVerified,
+      user: {
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        phoneNumber: user.phoneNumber as string,
+        email: user.email,
+        role: user.role,
+        isVerified: user.isVerified,
+        deviceId: device.id,
+        profileImage: user.profileImage as string,
+      },
       accesstoken,
       refreshToken: device?.refreshToken || refreshToken, // Remove "|| refreshToken" when frontend gets ready
-      profileImage: user.profileImage as string,
     };
   }
   catch(e) {
@@ -300,7 +342,7 @@ export class AuthService {
     }
   }
 
-  async refreshTokens(dto: refreshTokenDto): Promise<Tokens | null> {
+  async refreshTokens(dto: refreshTokenDto): Promise<any> {
     try {
       // Verify the refresh token
       interface JwtPayload {
@@ -357,8 +399,19 @@ export class AuthService {
       });
 
       return {
-        access_token: newAccessToken,
-        refresh_token: newRefreshToken,
+        user: {
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          phoneNumber: user.phoneNumber as string,
+          email: user.email,
+          role: user.role,
+          isVerified: user.isVerified,
+          profileImage: user.profileImage as string,
+          deviceId: device.id,
+        },
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
       };
     } catch (error) {
       console.log(error);
