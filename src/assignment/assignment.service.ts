@@ -97,9 +97,7 @@ export class AssignmentService {
         createdAt: true,
       },
     });
-    if (!assignments || assignments.length === 0) {
-      throw new NotFoundException('assignments not found');
-    }
+
     return assignments;
   }
   async getassignmentsInCourse(courseId: string) {

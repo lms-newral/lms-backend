@@ -48,6 +48,18 @@ export class ClassService {
     return { message: 'Class created successfully', data: newClass };
   }
 
+  async getClassByClassId(classId: string) {
+    const classes = await this.prisma.class.findUnique({
+      where: { id: classId },
+    });
+
+    if (!classes) {
+      throw new NotFoundException('No classes found for this course');
+    }
+
+    return classes;
+  }
+
   async getClassesInCourse(courseId: string) {
     const classes = await this.prisma.class.findMany({
       where: { courseId },

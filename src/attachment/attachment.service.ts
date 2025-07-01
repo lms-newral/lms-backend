@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Attachment, Role } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+
 interface ClassAuthResult {
   success: true;
   courseId: string;
@@ -24,6 +25,7 @@ interface ClassData {
 interface UserData {
   role: Role;
 }
+
 @Injectable()
 export class AttachmentService {
   constructor(private prisma: PrismaService) {}
@@ -83,7 +85,18 @@ export class AttachmentService {
 
     return attachments;
   }
+
   async getAttachmentsInClass(classId: string) {
+    // First verify the class exists
+    const classExists = await this.prisma.class.findUnique({
+      where: { id: classId },
+      select: { id: true },
+    });
+
+    if (!classExists) {
+      throw new NotFoundException('Class not found');
+    }
+
     const attachments = await this.prisma.attachment.findMany({
       where: {
         classId,
@@ -94,11 +107,11 @@ export class AttachmentService {
         createdAt: true,
       },
     });
-    if (!attachments || attachments.length === 0) {
-      throw new NotFoundException('assignments not found');
-    }
-    return attachments;
+
+    // Return empty array instead of throwing error - this is a valid state
+    return attachments; // This will be an empty array if no attachments found
   }
+
   async getAttachmentsInCourse(courseId: string) {
     const course = await this.prisma.course.findUnique({
       where: {
@@ -125,6 +138,7 @@ export class AttachmentService {
 
     return course.classes;
   }
+
   async updateAttachment(
     userId: string,
     assignmentId: string,
@@ -137,7 +151,7 @@ export class AttachmentService {
       select: { classId: true },
     });
     if (!getClassId || !getClassId.classId) {
-      throw new NotFoundException('Class not found');
+      throw new NotFoundException('Attachment not found');
     }
     const valid = await this.checkClassAndCreator(getClassId.classId, userId);
     if (!valid.success) {
@@ -155,6 +169,7 @@ export class AttachmentService {
     });
     return updateAttachment;
   }
+
   async deleteAttachment(userId: string, attachmentId: string) {
     const getClassId = await this.prisma.attachment.findUnique({
       where: {
@@ -163,7 +178,7 @@ export class AttachmentService {
       select: { classId: true },
     });
     if (!getClassId || !getClassId.classId) {
-      throw new NotFoundException('Class not found');
+      throw new NotFoundException('Attachment not found');
     }
     const valid = await this.checkClassAndCreator(getClassId.classId, userId);
     if (!valid.success) {

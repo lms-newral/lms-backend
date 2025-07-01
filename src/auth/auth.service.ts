@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
   checkUserDto,
@@ -15,6 +15,7 @@ import { Request } from 'express';
 import { UAParser, IResult } from 'ua-parser-js';
 import { Device } from '@prisma/client';
 import { OtpService } from 'src/services/services.service';
+import { NotFoundError } from 'rxjs';
 
 @Injectable()
 export class AuthService {
@@ -152,79 +153,71 @@ export class AuthService {
   async signup(dto: signupDto, req: Request): Promise<any> {
     const userExists = await this.checkUser(dto.email);
     if (userExists != null) {
-      throw new Error('email already exists');
+      throw new ForbiddenException('email already exists');
     }
-    try {
-      if (!req.headers['user-agent']) return null;
+    if (!req.headers['user-agent']) return null;
 
-      const ip = req.ip;
-      const userAgent = req.headers['user-agent'];
-      const parser = new UAParser(userAgent);
+    const ip = req.ip;
+    const userAgent = req.headers['user-agent'];
+    const parser = new UAParser(userAgent);
 
-      const verify = await this.otpService.verifyOtp(dto.email, dto.code);
-      if (!verify) {
-        throw new Error('OTP does not match');
-      }
-      const hashedPassword = await hash(dto.password, 10);
-      const newUser = await this.prismaService.user.create({
-        data: {
-          email: dto.email,
-          username: dto.username,
-          name: dto.name,
-          password: hashedPassword as string,
-          phoneNumber: dto.phoneNumber,
-          profileImage: dto.profileImage,
-
-          isVerified: true,
-        },
-      });
-      const access_token = await this.signAccessToken(
-        newUser.id,
-        newUser.email,
-      ); // returns access_token
-      const refresh_token = await this.signRefreshToken(
-        newUser.id,
-        newUser.email,
-      ); // returns refresh_token
-
-      const deviceInfo: IResult = parser.getResult();
-      // Create new device
-      const device = await this.prismaService.device.create({
-        data: {
-          osName: deviceInfo.os.name || '',
-          browserName: deviceInfo.browser.name || '',
-          deviceIp: ip || '',
-          userId: newUser.id,
-          refreshToken: refresh_token,
-        },
-      });
-      return {
-        user: {
-          id: newUser.id,
-          name: newUser.name,
-          phoneNumber: newUser.phoneNumber as string,
-          email: newUser.email,
-          role: newUser.role,
-          isVerified: newUser.isVerified,
-          profileImage: newUser.profileImage as string,
-          deviceId: device.id,
-        },
-        accesstoken: access_token,
-        refreshToken: device?.refreshToken || refresh_token, // Remove "|| refreshToken" when frontend gets ready
-      };
-    } catch (e) {
-      console.log(e);
-      return null;
+    const verify = await this.otpService.verifyOtp(dto.email, dto.code);
+    if (!verify) {
+      throw new Error('OTP does not match');
     }
+    const hashedPassword = await hash(dto.password, 10);
+    const newUser = await this.prismaService.user.create({
+      data: {
+        email: dto.email,
+        username: dto.username,
+        name: dto.name,
+        password: hashedPassword as string,
+        phoneNumber: dto.phoneNumber,
+        profileImage: dto.profileImage,
+
+        isVerified: true,
+      },
+    });
+    const access_token = await this.signAccessToken(newUser.id, newUser.email); // returns access_token
+    const refresh_token = await this.signRefreshToken(
+      newUser.id,
+      newUser.email,
+    ); // returns refresh_token
+
+    const deviceInfo: IResult = parser.getResult();
+    // Create new device
+    const device = await this.prismaService.device.create({
+      data: {
+        osName: deviceInfo.os.name || '',
+        browserName: deviceInfo.browser.name || '',
+        deviceIp: ip || '',
+        userId: newUser.id,
+        refreshToken: refresh_token,
+      },
+    });
+    return {
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        phoneNumber: newUser.phoneNumber as string,
+        email: newUser.email,
+        role: newUser.role,
+        isVerified: newUser.isVerified,
+        profileImage: newUser.profileImage as string,
+        deviceId: device.id,
+      },
+      accesstoken: access_token,
+      refreshToken: device?.refreshToken || refresh_token, // Remove "|| refreshToken" when frontend gets ready
+    };
   }
   async login(dto: loginDto, req: Request): Promise<any> {
     const user = await this.checkUser(dto.email);
     if (!user) {
-      throw new Error('Email does not exist');
+      throw new NotFoundError('Email does not exist');
     }
     const comparePassword = await compare(dto.password, user.password);
     if (!comparePassword) {
-      throw new Error('Password is incorrect');
+      throw new ForbiddenException('Password is incorrect');
     }
     if (!req.headers['user-agent']) return;
 
@@ -233,8 +226,6 @@ export class AuthService {
     const parser = new UAParser(userAgent);
 
     const deviceInfo: IResult = parser.getResult();
-
-    console.log(deviceInfo);
     let device: Device | null;
     device = await this.prismaService.device.findFirst({
       where: {

@@ -26,6 +26,12 @@ export class ClassController {
     return this.classService.getClassesInCourse(courseId);
   }
 
+  @Get('/single/:classId')
+  @UseGuards(JwtAuthGuard)
+  getClassesByClassId(@Param('classId') classId: string) {
+    return this.classService.getClassByClassId(classId);
+  }
+
   @Put('/update/:classId')
   @UseGuards(JwtAuthGuard)
   updateClass(

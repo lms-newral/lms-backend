@@ -106,9 +106,7 @@ export class NotesService {
     if (!classes) {
       throw new NotFoundException('Class not found');
     }
-    if (!classes.notes || classes.notes.length === 0) {
-      throw new NotFoundException('notes not found');
-    }
+
     return classes.notes;
   }
   async getNotesInCourse(courseId: string) {
