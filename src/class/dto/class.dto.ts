@@ -20,7 +20,6 @@ export class updateClassDto {
   description?: string;
   videoLink?: string;
   zoomLink?: string;
-  attachments?: string;
   isLive?: boolean;
   isRecorded?: boolean;
   isActive?: boolean;

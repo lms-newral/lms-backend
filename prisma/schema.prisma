@@ -92,10 +92,11 @@ model Course {
   enrollments CourseEnrollment[]
   classes     Class[]
 
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
-  Note       Note[]
-  Assignment Assignment[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  Note        Note[]
+  Assignment  Assignment[]
+  Attachments Attachment[]
 
   @@index([creatorId])
   @@index([isActive])
@@ -128,12 +129,12 @@ model CourseEnrollment {
 }
 
 model Class {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
   title       String
   description String?
   videoLink   String?
   zoomLink    String?
-  attachments String // pdf and other attachment links
+  attachments Attachment[] // pdf and other attachment links
 
   notes       Note[]
   assignments Assignment[]
@@ -156,6 +157,19 @@ model Class {
   updatedAt DateTime @updatedAt
 
   @@index([scheduledAt])
+}
+
+model Attachment {
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  attachment String
+
+  class   Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  classId String @db.ObjectId
+
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId  String   @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Note {

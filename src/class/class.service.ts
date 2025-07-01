@@ -36,7 +36,6 @@ export class ClassService {
         description: dto.description,
         videoLink: dto.videoLink,
         zoomLink: dto.zoomLink,
-        attachments: dto.attachments || '',
         courseId: courseId,
         creatorId: userId,
         scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : undefined,

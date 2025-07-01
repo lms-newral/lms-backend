@@ -68,6 +68,15 @@ export class CourseService {
 
     return updatedCourse;
   }
+  async getCourseById(courseId: string) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+    });
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+    return course;
+  }
   async transferOwnership(courseId: string, dto: { teacherId: string }) {
     const user = await this.prisma.user.findUnique({
       where: {

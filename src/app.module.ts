@@ -17,6 +17,8 @@ import { CourseEnrollmentController } from './course-enrollment/course-enrollmen
 import { CourseEnrollmentModule } from './course-enrollment/course-enrollment.module';
 import { NotesModule } from './notes/notes.module';
 import { AssignmentModule } from './assignment/assignment.module';
+import { AttachmentService } from './attachment/attachment.service';
+import { AttachmentModule } from './attachment/attachment.module';
 
 @Module({
   imports: [
@@ -30,6 +32,7 @@ import { AssignmentModule } from './assignment/assignment.module';
     CourseEnrollmentModule,
     NotesModule,
     AssignmentModule,
+    AttachmentModule,
   ],
   controllers: [ClientController, UserController, CourseEnrollmentController],
   providers: [
@@ -40,6 +43,7 @@ import { AssignmentModule } from './assignment/assignment.module';
       useClass: ClientStatusGuard,
     },
     CourseEnrollmentService,
+    AttachmentService,
   ],
 })
 export class AppModule {}

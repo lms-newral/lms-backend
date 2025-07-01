@@ -28,6 +28,10 @@ export class CourseController {
   createCourse(@Body() dto: CreateCoureDto, @Request() req: RequestWithUser) {
     return this.couseService.createCourse(dto, req.user.id);
   }
+  @Get('/getCourseById/:courseId')
+  getCourseById(@Param('courseId') courseId: string) {
+    return this.couseService.getCourseById(courseId);
+  }
   @Put('/transfer/:courseId')
   @UseGuards(JwtAuthGuard)
   @Roles(Role.ADMIN || Role.SUPER_ADMIN)

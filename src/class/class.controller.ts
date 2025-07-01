@@ -19,11 +19,13 @@ import { Roles } from 'src/common/decorators';
 @Controller('class')
 export class ClassController {
   constructor(private classService: ClassService) {}
+
   @Get('/all/:courseId')
   @UseGuards(JwtAuthGuard)
   getClassesInCourse(@Param('courseId') courseId: string) {
     return this.classService.getClassesInCourse(courseId);
   }
+
   @Put('/update/:classId')
   @UseGuards(JwtAuthGuard)
   updateClass(
@@ -33,6 +35,7 @@ export class ClassController {
   ) {
     return this.classService.updateClass(dto, req.user.id, classId);
   }
+
   @Post('/create/:courseId')
   @UseGuards(JwtAuthGuard)
   createClass(
@@ -45,7 +48,7 @@ export class ClassController {
 
   @Delete('/delete/:classId')
   @UseGuards(JwtAuthGuard)
-  @Roles(Role.ADMIN || Role.TEACHER || Role.SUPER_ADMIN)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.SUPER_ADMIN)
   deleteClass(
     @Param('classId') classId: string,
     @Request() req: RequestWithUser,

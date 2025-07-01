@@ -21,7 +21,7 @@ export class CourseEnrollmentController {
     return this.CourseEnrollmentService.getAllStudentsInCourse(courseId);
   }
   @Get('/courses/:studentId')
-  getAllCoursesForStudent(@Param('courseId') studentId: string) {
+  getAllCoursesForStudent(@Param('studentId') studentId: string) {
     return this.CourseEnrollmentService.getAllCoursesForStudent(studentId);
   }
 }

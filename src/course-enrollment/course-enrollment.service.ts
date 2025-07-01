@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -99,28 +100,43 @@ export class CourseEnrollmentService {
     }
   }
   async getAllCoursesForStudent(studentId: string) {
-    try {
-      const enrollments = await this.prisma.courseEnrollment.findMany({
-        where: {
-          studentId: studentId,
-        },
-        include: {
-          course: {
-            select: {
-              id: true,
-              title: true,
-              description: true,
-              category: true,
-              thumbnail: true,
-            },
+    if (!studentId || studentId.trim() === '') {
+      throw new BadRequestException(
+        'Student ID is required and cannot be empty',
+      );
+    }
+
+    // Optional: Verify student exists first
+    const studentExists = await this.prisma.user.findUnique({
+      where: { id: studentId },
+      select: { id: true },
+    });
+
+    if (!studentExists) {
+      throw new NotFoundException('Student not found');
+    }
+
+    const enrollments = await this.prisma.courseEnrollment.findMany({
+      where: {
+        studentId: studentId,
+      },
+      include: {
+        course: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            category: true,
+            thumbnail: true,
           },
         },
-      });
+      },
+    });
 
-      if (!enrollments) throw new NotFoundException('No students found');
-      return enrollments;
-    } catch (error) {
-      throw new ServiceUnavailableException('Something went wrong' + error);
+    if (!enrollments || enrollments.length === 0) {
+      throw new NotFoundException('No courses found for this student');
     }
+
+    return enrollments;
   }
 }
