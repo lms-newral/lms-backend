@@ -13,21 +13,25 @@ export class CourseService {
   constructor(private prisma: PrismaService) {}
 
   async createCourse(dto: CreateCoureDto, userId: string) {
-    try {
-      const course = await this.prisma.course.create({
-        data: {
-          title: dto.title,
-          description: dto.description,
-          thumbnail: dto.thumbnail,
-          price: dto.price,
-          category: dto.category,
-          creatorId: userId,
-        },
-      });
-      return course;
-    } catch (error) {
-      throw new Error(error);
+    const checkCourseTitle = await this.prisma.course.findFirst({
+      where: {
+        title: dto.title,
+      },
+    });
+    if (checkCourseTitle) {
+      throw new ForbiddenException('Please choose a different title');
     }
+    const course = await this.prisma.course.create({
+      data: {
+        title: dto.title,
+        description: dto.description,
+        thumbnail: dto.thumbnail,
+        price: dto.price,
+        category: dto.category,
+        creatorId: userId,
+      },
+    });
+    return course;
   }
   async getCourses(): Promise<Course[] | null> {
     try {

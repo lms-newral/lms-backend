@@ -10,6 +10,7 @@ import {
   courseEnrollmentDto,
   updateCourseEnrollmentDto,
 } from './dto/course-enrollment.dto';
+import { CourseEnrollment } from '@prisma/client';
 
 @Injectable()
 export class CourseEnrollmentService {
@@ -109,9 +110,18 @@ export class CourseEnrollmentService {
     // Optional: Verify student exists first
     const studentExists = await this.prisma.user.findUnique({
       where: { id: studentId },
-      select: { id: true },
+      select: { id: true, role: true },
     });
-
+    if (
+      studentExists?.role == 'ADMIN' ||
+      studentExists?.role == 'SUPER_ADMIN'
+    ) {
+      const course = await this.prisma.course.findMany({});
+      const results = course.map((c) => {
+        return { course: c };
+      });
+      return results;
+    }
     if (!studentExists) {
       throw new NotFoundException('Student not found');
     }
@@ -128,6 +138,18 @@ export class CourseEnrollmentService {
             description: true,
             category: true,
             thumbnail: true,
+            isActive: true,
+            price: true,
+            creator: true,
+            classes: true,
+            Note: true,
+            Assignment: true,
+            Attachments: true,
+            _count: {
+              select: {
+                classes: true, // Assumes `classes` is the relation field in Course model
+              },
+            },
           },
         },
       },
@@ -136,7 +158,24 @@ export class CourseEnrollmentService {
     if (!enrollments || enrollments.length === 0) {
       throw new NotFoundException('No courses found for this student');
     }
-
+    /*const results = enrollments.map((c) => {
+      return {
+        id: c.course.id,
+        title: c.course.title,
+        description: c.course.description,
+        class_count: c.course._count,
+        thumbnail: c.course.thumbnail,
+        category: c.course.category,
+        isActive: c.course.isActive,
+        Note: c.course.Note,
+        Assignment: c.course.Assignment,
+        Attachment: c.course.Attachments,
+        creator: c.course.Attachments,
+        classes: c.course.classes,
+      };
+    });
+    return results;
+  */
     return enrollments;
   }
 }

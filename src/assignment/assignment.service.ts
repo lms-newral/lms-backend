@@ -51,13 +51,18 @@ export class AssignmentService {
     });
 
     if (!getClass || !user) {
+      console.log('Canot get user or class');
+      console.log('class', getClass);
+      console.log('user', user);
       return { success: false };
     }
 
     const isAdmin = user.role === Role.ADMIN || user.role === Role.SUPER_ADMIN;
+    console.log(isAdmin);
     const isCreator = getClass.creatorId === userId;
 
     if (!isAdmin && !isCreator) {
+      console.log('this failed');
       return { success: false };
     }
 

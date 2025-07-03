@@ -63,12 +63,34 @@ export class ClassService {
   async getClassesInCourse(courseId: string) {
     const classes = await this.prisma.class.findMany({
       where: { courseId },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        videoLink: true,
+        zoomLink: true,
+        attachments: true,
+
+        notes: true,
+        assignments: true,
+
+        course: true,
+        courseId: true,
+
+        //creator: true,
+        //creatorId: true,
+
+        scheduledAt: true,
+        attendanceCount: true,
+
+        isLive: true,
+        isRecorded: true,
+        isActive: true,
+
+        createdAt: true,
+        updatedAt: true,
+      },
     });
-
-    if (!classes.length) {
-      throw new NotFoundException('No classes found for this course');
-    }
-
     return classes;
   }
 

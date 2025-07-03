@@ -79,7 +79,7 @@ model Otp {
 
 model Course {
   id          String  @id @default(auto()) @map("_id") @db.ObjectId
-  title       String
+  title       String  @unique
   description String
   thumbnail   String?
   isActive    Boolean @default(true)
@@ -100,7 +100,6 @@ model Course {
 
   @@index([creatorId])
   @@index([isActive])
-  @@index([title])
   @@index([category])
 }
 
