@@ -22,6 +22,13 @@ export class CourseController {
   getCourses(): Promise<Course[] | null> {
     return this.couseService.getCourses();
   }
+  @Get('/unenrolled')
+  @UseGuards(JwtAuthGuard)
+  getunenrolledCourse(
+    @Request() req: RequestWithUser,
+  ): Promise<Course[] | null> {
+    return this.couseService.unenrolledCourses(req.user.id);
+  }
   @Post()
   @UseGuards(JwtAuthGuard)
   @Roles(Role.TEACHER || Role.ADMIN || Role.SUPER_ADMIN)

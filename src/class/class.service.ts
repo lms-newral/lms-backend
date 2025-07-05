@@ -37,7 +37,7 @@ export class ClassService {
         videoLink: dto.videoLink,
         zoomLink: dto.zoomLink,
         courseId: courseId,
-        creatorId: userId,
+        creatorId: course.creatorId,
         scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : undefined,
         isLive: dto.isLive,
         isRecorded: dto.isRecorded,

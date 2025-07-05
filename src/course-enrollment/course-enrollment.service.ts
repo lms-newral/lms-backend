@@ -10,7 +10,6 @@ import {
   courseEnrollmentDto,
   updateCourseEnrollmentDto,
 } from './dto/course-enrollment.dto';
-import { CourseEnrollment } from '@prisma/client';
 
 @Injectable()
 export class CourseEnrollmentService {
@@ -116,7 +115,27 @@ export class CourseEnrollmentService {
       studentExists?.role == 'ADMIN' ||
       studentExists?.role == 'SUPER_ADMIN'
     ) {
-      const course = await this.prisma.course.findMany({});
+      const course = await this.prisma.course.findMany({
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          category: true,
+          thumbnail: true,
+          isActive: true,
+          price: true,
+          creator: true,
+          classes: true,
+          Note: true,
+          Assignment: true,
+          Attachments: true,
+          _count: {
+            select: {
+              classes: true,
+            },
+          },
+        },
+      });
       const results = course.map((c) => {
         return { course: c };
       });

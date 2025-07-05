@@ -19,6 +19,7 @@ import { NotesModule } from './notes/notes.module';
 import { AssignmentModule } from './assignment/assignment.module';
 import { AttachmentService } from './attachment/attachment.service';
 import { AttachmentModule } from './attachment/attachment.module';
+import { RequestEnrollmentModule } from './request-enrollment/request-enrollment.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { AttachmentModule } from './attachment/attachment.module';
     NotesModule,
     AssignmentModule,
     AttachmentModule,
+    RequestEnrollmentModule,
   ],
   controllers: [ClientController, UserController, CourseEnrollmentController],
   providers: [

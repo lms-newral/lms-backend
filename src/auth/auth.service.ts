@@ -9,7 +9,6 @@ import {
   signupDto,
 } from './dto/auth.dto';
 import { compare, hash } from 'bcrypt';
-import { Tokens } from './types';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { UAParser, IResult } from 'ua-parser-js';
@@ -114,39 +113,31 @@ export class AuthService {
     if (userExists != null) {
       return null;
     }
-    try {
-      const verify = await this.otpService.verifyOtp(dto.email, dto.code);
-      if (!verify) {
-        throw new Error('OTP does not match');
-      }
-      const hashedPassword = await hash(dto.password, 10);
-      const newUser = await this.prismaService.user.create({
-        data: {
-          email: dto.email,
-          name: dto.name,
-          username: dto.username, // Add this line to provide the required username property
-          password: hashedPassword,
-          phoneNumber: dto.phoneNumber,
-          profileImage: dto.profileImage,
-          deviceLimit: 5,
-          role: 'TEACHER',
-          isVerified: true,
-        },
-      });
-      const access_token = await this.signAccessToken(
-        newUser.id,
-        newUser.email,
-      ); // returns access_token
-      const refresh_token = await this.signRefreshToken(
-        newUser.id,
-        newUser.email,
-      ); // returns refresh_token
-
-      return { accesToken: access_token, refreshToken: refresh_token };
-    } catch (e) {
-      console.log(e);
-      return null;
+    const verify = await this.otpService.verifyOtp(dto.email, dto.code);
+    if (!verify) {
+      throw new Error('OTP does not match');
     }
+    const hashedPassword = await hash(dto.password, 10);
+    const newUser = await this.prismaService.user.create({
+      data: {
+        email: dto.email,
+        name: dto.name,
+        username: dto.username, // Add this line to provide the required username property
+        password: hashedPassword,
+        phoneNumber: dto.phoneNumber,
+        profileImage: dto.profileImage,
+        deviceLimit: 5,
+        role: 'TEACHER',
+        isVerified: true,
+      },
+    });
+    const access_token = await this.signAccessToken(newUser.id, newUser.email); // returns access_token
+    const refresh_token = await this.signRefreshToken(
+      newUser.id,
+      newUser.email,
+    ); // returns refresh_token
+
+    return { accesToken: access_token, refreshToken: refresh_token };
   }
 
   // Signup
@@ -303,148 +294,117 @@ export class AuthService {
       refreshToken: device?.refreshToken || refreshToken, // Remove "|| refreshToken" when frontend gets ready
     };
   }
-  catch(e) {
-    console.log(e);
-    throw new Error(e);
-  }
+
   async logout(dto: logoutDto): Promise<string> {
-    try {
-      if (dto.deviceId) {
-        // Logout from specific device - delete the device entirely
-        await this.prismaService.device.delete({
-          where: {
-            id: dto.deviceId,
-            userId: dto.userId,
-          },
-        });
-        return 'Logged out and removed device successfully';
-      } else {
-        // Logout from all devices - delete all user devices
-        const deletedDevices = await this.prismaService.device.deleteMany({
-          where: {
-            userId: dto.userId,
-          },
-        });
-        return `Logged out and removed ${deletedDevices.count} devices successfully`;
-      }
-    } catch (error) {
-      console.log(error);
-      throw new Error('Logout failed');
+    if (dto.deviceId) {
+      // Logout from specific device - delete the device entirely
+      await this.prismaService.device.delete({
+        where: {
+          id: dto.deviceId,
+          userId: dto.userId,
+        },
+      });
+      return 'Logged out and removed device successfully';
+    } else {
+      // Logout from all devices - delete all user devices
+      const deletedDevices = await this.prismaService.device.deleteMany({
+        where: {
+          userId: dto.userId,
+        },
+      });
+      return `Logged out and removed ${deletedDevices.count} devices successfully`;
     }
   }
 
   async refreshTokens(dto: refreshTokenDto): Promise<any> {
-    try {
-      // Verify the refresh token
-      interface JwtPayload {
-        sub: string;
-        email: string;
-        [key: string]: any;
-      }
-
-      const payload = await this.jwtService.verifyAsync<JwtPayload>(
-        dto.refreshToken,
-        {
-          secret: process.env.RT_SECRET,
-        },
-      );
-
-      const userId: string = payload.sub;
-      const email: string = payload.email;
-
-      // Check if user exists
-      const user = await this.prismaService.user.findUnique({
-        where: {
-          id: userId,
-        },
-      });
-
-      if (!user) {
-        throw new Error('User not found');
-      }
-
-      // Find the device with this refresh token
-      const device = await this.prismaService.device.findFirst({
-        where: {
-          refreshToken: dto.refreshToken,
-          userId: userId,
-        },
-      });
-
-      if (!device) {
-        throw new Error('Invalid refresh token or device not found');
-      }
-
-      // Generate new tokens
-      const newAccessToken = await this.signAccessToken(userId, email);
-      const newRefreshToken = await this.signRefreshToken(userId, email);
-
-      // Update the device with new refresh token
-      await this.prismaService.device.update({
-        where: {
-          id: device.id,
-        },
-        data: {
-          refreshToken: newRefreshToken,
-        },
-      });
-
-      return {
-        user: {
-          id: user.id,
-          name: user.name,
-          username: user.username,
-          phoneNumber: user.phoneNumber as string,
-          email: user.email,
-          role: user.role,
-          isVerified: user.isVerified,
-          profileImage: user.profileImage as string,
-          deviceId: device.id,
-        },
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken,
-      };
-    } catch (error) {
-      console.log(error);
-
-      // If token is expired or invalid, clean up the device by deleting it
-      try {
-        await this.prismaService.device.deleteMany({
-          where: {
-            refreshToken: dto.refreshToken,
-          },
-        });
-      } catch (cleanupError) {
-        console.log('Failed to cleanup invalid refresh token:', cleanupError);
-      }
-
-      throw new Error('Token refresh failed');
+    // Verify the refresh token
+    interface JwtPayload {
+      sub: string;
+      email: string;
+      [key: string]: any;
     }
+
+    const payload = await this.jwtService.verifyAsync<JwtPayload>(
+      dto.refreshToken,
+      {
+        secret: process.env.RT_SECRET,
+      },
+    );
+
+    const userId: string = payload.sub;
+    const email: string = payload.email;
+
+    // Check if user exists
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Find the device with this refresh token
+    const device = await this.prismaService.device.findFirst({
+      where: {
+        refreshToken: dto.refreshToken,
+        userId: userId,
+      },
+    });
+    if (!device) {
+      throw new Error('Invalid refresh token or device not found');
+    }
+
+    // Generate new tokens
+    const newAccessToken = await this.signAccessToken(userId, email);
+    const newRefreshToken = await this.signRefreshToken(userId, email);
+
+    // Update the device with new refresh token
+    await this.prismaService.device.update({
+      where: {
+        id: device.id,
+      },
+      data: {
+        refreshToken: newRefreshToken,
+      },
+    });
+
+    return {
+      user: {
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        phoneNumber: (user.phoneNumber as string) || '',
+        email: user.email,
+        role: user.role,
+        isVerified: user.isVerified,
+        profileImage: (user.profileImage as string) || '',
+        deviceId: device.id,
+      },
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+    };
   }
   // Helper method to logout from specific device - deletes device entirely
   async logoutFromDevice(userId: string, deviceId: string): Promise<string> {
-    try {
-      const device = await this.prismaService.device.findFirst({
-        where: {
-          id: deviceId,
-          userId: userId,
-        },
-      });
+    const device = await this.prismaService.device.findFirst({
+      where: {
+        id: deviceId,
+        userId: userId,
+      },
+    });
 
-      if (!device) {
-        throw new Error('Device not found');
-      }
-
-      await this.prismaService.device.delete({
-        where: {
-          id: deviceId,
-        },
-      });
-
-      return 'Logged out and removed device successfully';
-    } catch (error) {
-      console.log(error);
-      throw new Error('Failed to logout from device');
+    if (!device) {
+      throw new Error('Device not found');
     }
+
+    await this.prismaService.device.delete({
+      where: {
+        id: deviceId,
+      },
+    });
+
+    return 'Logged out and removed device successfully';
   }
 }

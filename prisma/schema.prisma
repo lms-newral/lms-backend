@@ -44,8 +44,9 @@ model User {
   enrolledCourses CourseEnrollment[] // Courses student is enrolled in
   createdClasses  Class[]            @relation("ClassCreator")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  EnrollmentRequest EnrollmentRequest[]
 
   @@index([role])
   @@index([isVerified])
@@ -92,15 +93,39 @@ model Course {
   enrollments CourseEnrollment[]
   classes     Class[]
 
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  Note        Note[]
-  Assignment  Assignment[]
-  Attachments Attachment[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  Note              Note[]
+  Assignment        Assignment[]
+  Attachments       Attachment[]
+  EnrollmentRequest EnrollmentRequest[]
 
   @@index([creatorId])
   @@index([isActive])
   @@index([category])
+}
+
+model EnrollmentRequest {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Student who requested for enrollment in course
+  student   User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId String        @db.ObjectId
+  status    RequestStatus
+  // Course the student is requested to enrolled in
+  course    Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId  String        @db.ObjectId
+
+  @@unique([studentId, courseId]) // A student can only request once for  a course
+  @@index([studentId])
+  @@index([status])
+  @@index([courseId])
+}
+
+enum RequestStatus {
+  PENDING
+  REJECTED
+  ACCEPTED
 }
 
 model CourseEnrollment {

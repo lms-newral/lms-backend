@@ -34,11 +34,7 @@ export class CourseService {
     return course;
   }
   async getCourses(): Promise<Course[] | null> {
-    try {
-      return await this.prisma.course.findMany({});
-    } catch (error) {
-      throw new Error(error);
-    }
+    return await this.prisma.course.findMany({});
   }
 
   async updateCourse(
@@ -119,5 +115,23 @@ export class CourseService {
       },
     });
     return updatedCourse;
+  }
+  async unenrolledCourses(userId: string) {
+    const enrolledCourses = await this.prisma.courseEnrollment.findMany({
+      where: {
+        studentId: userId,
+      },
+      select: {
+        courseId: true,
+      },
+    });
+    const enrolledCourseIds = enrolledCourses.map(
+      (enrollment) => enrollment.courseId,
+    );
+    const courses: Course[] = await this.prisma.course.findMany({});
+    const unenrolledCourses = courses.filter(
+      (course) => !enrolledCourseIds.includes(course.id),
+    );
+    return unenrolledCourses;
   }
 }
