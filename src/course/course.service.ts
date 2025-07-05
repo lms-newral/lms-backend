@@ -36,6 +36,13 @@ export class CourseService {
   async getCourses(): Promise<Course[] | null> {
     return await this.prisma.course.findMany({});
   }
+  async getCoursesCreatedByTeacher(id: string): Promise<Course[] | null> {
+    return await this.prisma.course.findMany({
+      where: {
+        creatorId: id,
+      },
+    });
+  }
 
   async updateCourse(
     courseId: string,

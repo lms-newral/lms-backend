@@ -138,7 +138,15 @@ export class AttachmentService {
 
     return course.classes;
   }
+  async getAttachmentById(attachmentId: string) {
+    const attachment = await this.prisma.attachment.findUnique({
+      where: {
+        id: attachmentId,
+      },
+    });
 
+    return attachment;
+  }
   async updateAttachment(
     userId: string,
     assignmentId: string,

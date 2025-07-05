@@ -34,6 +34,10 @@ export class AssignmentController {
   getAssignmentInCourse(@Param('courseId') courseId: string) {
     return this.assignmentService.getassignmentsInCourse(courseId);
   }
+  @Get('/getAssignmentById/:assignmentId')
+  getAssignmentById(@Param('assignmentId') assignmentId: string) {
+    return this.assignmentService.getAssignmentById(assignmentId);
+  }
 
   @Get('/class/:classId')
   getAssignmentInClass(@Param('classId') classId: string) {

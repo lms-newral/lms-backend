@@ -34,7 +34,10 @@ export class AttachmentController {
   getAssignmentInCourse(@Param('courseId') courseId: string) {
     return this.attachmentService.getAttachmentsInCourse(courseId);
   }
-
+  @Get('/getAttachmentById/:attachmentId')
+  getNoteById(@Param('attachmentId') attachmentId: string) {
+    return this.attachmentService.getAttachmentById(attachmentId);
+  }
   @Get('/class/:classId')
   getAssignmentInClass(@Param('classId') classId: string) {
     return this.attachmentService.getAttachmentsInClass(classId);

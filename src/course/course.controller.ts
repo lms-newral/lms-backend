@@ -22,6 +22,13 @@ export class CourseController {
   getCourses(): Promise<Course[] | null> {
     return this.couseService.getCourses();
   }
+  @Get('/createdBy')
+  @UseGuards(JwtAuthGuard)
+  getCoursesCreatedByTeacher(
+    @Request() req: RequestWithUser,
+  ): Promise<Course[] | null> {
+    return this.couseService.getCoursesCreatedByTeacher(req.user.id);
+  }
   @Get('/unenrolled')
   @UseGuards(JwtAuthGuard)
   getunenrolledCourse(

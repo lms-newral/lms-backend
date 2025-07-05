@@ -88,6 +88,15 @@ export class NotesService {
 
     return createNotes;
   }
+  async getNoteById(notesId: string) {
+    const note = await this.prisma.note.findUnique({
+      where: {
+        id: notesId,
+      },
+    });
+
+    return note;
+  }
   async getNotesInClass(classId: string) {
     const classes = await this.prisma.class.findUnique({
       where: {

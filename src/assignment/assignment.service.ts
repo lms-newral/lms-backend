@@ -91,6 +91,15 @@ export class AssignmentService {
 
     return assignment;
   }
+  async getAssignmentById(assigmentId: string) {
+    const assignment = await this.prisma.assignment.findUnique({
+      where: {
+        id: assigmentId,
+      },
+    });
+
+    return assignment;
+  }
   async getassignmentsInClass(classId: string) {
     const assignments = await this.prisma.assignment.findMany({
       where: {
